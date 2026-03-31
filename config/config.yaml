@@ -76,6 +76,7 @@ retail_experiment:
   unique_sku_match_limit: 1
   use_saved_index: true
   index_dir: "catalog/index"
+  embedder_type: "deterministic_path"
 
 # Product Clustering (optional - for shelf row detection)
 clustering:

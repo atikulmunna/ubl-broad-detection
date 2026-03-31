@@ -9,7 +9,8 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 from config.loader import RETAIL_EXPERIMENT_CONFIG
-from utils.retail_index import CatalogIndexError, DeterministicPathEmbedder, load_catalog_index
+from utils.retail_embedding import create_embedder
+from utils.retail_index import CatalogIndexError, load_catalog_index
 
 
 _RUNTIME_INDEX_CACHE = {}
@@ -21,7 +22,7 @@ def reset_runtime_index_cache():
 
 
 def get_runtime_index_components(config: Dict = None, index_loader=load_catalog_index,
-                                 embedder_factory=DeterministicPathEmbedder) -> Tuple[object, object, Dict]:
+                                 embedder_factory=create_embedder) -> Tuple[object, object, Dict]:
     """
     Return `(index, embedder, status)` for runtime use.
 
@@ -30,6 +31,7 @@ def get_runtime_index_components(config: Dict = None, index_loader=load_catalog_
     runtime_config = config or RETAIL_EXPERIMENT_CONFIG
     use_saved_index = runtime_config.get("use_saved_index", True)
     index_dir = runtime_config.get("index_dir", "catalog/index")
+    embedder_type = runtime_config.get("embedder_type", "deterministic_path")
     cache_key = str(index_dir)
 
     if not use_saved_index:
@@ -37,6 +39,7 @@ def get_runtime_index_components(config: Dict = None, index_loader=load_catalog_
             "index_used": False,
             "index_status": "disabled",
             "index_dir": cache_key,
+            "embedder_type": embedder_type,
         }
 
     if cache_key in _RUNTIME_INDEX_CACHE:
@@ -44,7 +47,7 @@ def get_runtime_index_components(config: Dict = None, index_loader=load_catalog_
 
     try:
         index = index_loader(Path(index_dir))
-        embedder = embedder_factory(dimension=index.dimension or 16)
+        embedder = embedder_factory(embedder_type=embedder_type, dimension=index.dimension or 16)
         result = (
             index,
             embedder,
@@ -54,6 +57,7 @@ def get_runtime_index_components(config: Dict = None, index_loader=load_catalog_
                 "index_dir": cache_key,
                 "index_reference_count": index.size,
                 "index_dimension": index.dimension,
+                "embedder_type": embedder_type,
             },
         )
     except (CatalogIndexError, FileNotFoundError, OSError):
@@ -64,6 +68,7 @@ def get_runtime_index_components(config: Dict = None, index_loader=load_catalog_
                 "index_used": False,
                 "index_status": "unavailable",
                 "index_dir": cache_key,
+                "embedder_type": embedder_type,
             },
         )
 

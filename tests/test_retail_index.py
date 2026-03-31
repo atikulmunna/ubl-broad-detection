@@ -6,9 +6,9 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+from utils.retail_embedding import DeterministicPathEmbedder
 from utils.retail_index import (
     CatalogIndexError,
-    DeterministicPathEmbedder,
     audit_catalog_references,
     build_onboarding_report,
     build_catalog_index,

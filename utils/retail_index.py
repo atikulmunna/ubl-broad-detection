@@ -19,6 +19,7 @@ from typing import Dict, List, Sequence
 
 import numpy as np
 
+from utils.retail_embedding import DeterministicPathEmbedder
 from utils.retail_catalog import VALIDATED_RETAIL_CATALOG
 
 
@@ -54,39 +55,6 @@ class CatalogMatch:
 
 class CatalogIndexError(ValueError):
     """Raised when catalog indexing inputs are invalid."""
-
-
-class DeterministicPathEmbedder:
-    """
-    Cheap deterministic embedder for testing.
-
-    It hashes the provided key into a fixed-size normalized vector so index
-    behavior can be exercised without any ML dependency.
-    """
-
-    def __init__(self, dimension: int = 16):
-        if dimension <= 0:
-            raise CatalogIndexError("Embedder dimension must be positive")
-        self.dimension = dimension
-
-    def embed_key(self, key: str) -> np.ndarray:
-        values = np.zeros(self.dimension, dtype=np.float32)
-        encoded = key.encode("utf-8")
-        if not encoded:
-            encoded = b"\0"
-        for index, byte in enumerate(encoded):
-            values[index % self.dimension] += (byte + 1) / 255.0
-
-        norm = np.linalg.norm(values)
-        if norm == 0:
-            return values
-        return values / norm
-
-    def embed_reference(self, reference: CatalogReference) -> np.ndarray:
-        return self.embed_key(reference.image_path)
-
-    def embed_query(self, query: str) -> np.ndarray:
-        return self.embed_key(query)
 
 
 def _is_reference_image(path: Path) -> bool:
