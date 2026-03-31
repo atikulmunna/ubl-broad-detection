@@ -1,0 +1,452 @@
+# Sachet Display Standards
+# Complete sachet detection classes (63 total) with display names, categories, and company mappings
+
+# Product name mappings (AI detection name -> Sachet standard name + metadata)
+product_mappings:
+  # ==== HAIR CARE - UBL ====
+
+  # Clear
+  "clear_men_shamp_csm":
+    name: "Clear Men Cool Sport Menthol Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "clear_men_shamp_csm_rotate":
+    name: "Clear Men Cool Sport Menthol Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "clear_shmp_cac":
+    name: "Clear Anti Dandruff Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "clear_shmp_cac_rotate":
+    name: "Clear Anti Dandruff Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "clear_hanger":
+    name: "Clear Sachet Hanger"
+    category: "hair_care"
+    is_hanger: true
+    company: "Unilever Bangladesh Limited"
+
+  # Clinic Plus
+  "clinic_plus_smp_stl_hl_cs":
+    name: "Clinic Plus Strong & Long Hair Fall Control Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "clinic_plus_smp_stl_hl_cs_rotate":
+    name: "Clinic Plus Strong & Long Hair Fall Control Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+
+  # Dove
+  "dove_cndtionr":
+    name: "Dove Conditioner"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "dove_cndtionr_rotate":
+    name: "Dove Conditioner"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "dove_shampo":
+    name: "Dove Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "dove_shampo_rotate":
+    name: "Dove Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "dove_intensive_repair_dec25":
+    name: "Dove Intensive Repair Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "dove_intensive_repair_rotate_dec25":
+    name: "Dove Intensive Repair Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "dove_hanger":
+    name: "Dove Sachet Hanger"
+    category: "hair_care"
+    is_hanger: true
+    company: "Unilever Bangladesh Limited"
+
+  # Sunsilk
+  "sunsilk_sm_blk_sprk":
+    name: "Sunsilk Black Shine Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "sunsilk_sm_blk_sprk_rotate":
+    name: "Sunsilk Black Shine Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "sunsilk_sm_tl_ocn_sr_3t":
+    name: "Sunsilk Thick & Long Onion Serum Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "sunsilk_sm_tl_ocn_sr_3t_rotate":
+    name: "Sunsilk Thick & Long Onion Serum Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "sunsilk_smp_hfs_ocsr":
+    name: "Sunsilk Hair Fall Solution Onion Conditioner Serum"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "sunsilk_smp_hfs_ocsr_rotate":
+    name: "Sunsilk Hair Fall Solution Onion Conditioner Serum"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "sunsilk_cond_hfs_serend":
+    name: "Sunsilk Conditioner Hair Fall Solution Serendipity"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "sunsilk_cond_hfs_serend_rotate":
+    name: "Sunsilk Conditioner Hair Fall Solution Serendipity"
+    category: "hair_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "sunsilk_hanger":
+    name: "Sunsilk Sachet Hanger"
+    category: "hair_care"
+    is_hanger: true
+    company: "Unilever Bangladesh Limited"
+
+  # ==== HAIR CARE - COMPETITOR ====
+
+  "parachute_naturale_shampoo":
+    name: "Parachute Naturale Shampoo"
+    category: "hair_care"
+    is_hanger: false
+    company: "Marico Limited"
+
+  # ==== ORAL CARE - UBL ====
+
+  # Closeup
+  "close_up_tp_mc_mfr_wofdi":
+    name: "Closeup Toothpaste Menthol Fresh"
+    category: "oral_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "close_up_tp_mc_mfr_wofdi_rotate":
+    name: "Closeup Toothpaste Menthol Fresh"
+    category: "oral_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "closeup_hanger":
+    name: "Closeup Sachet Hanger"
+    category: "oral_care"
+    is_hanger: true
+    company: "Unilever Bangladesh Limited"
+
+  # ==== ORAL CARE - COMPETITOR ====
+
+  "brushup_gel_toothpaste":
+    name: "Brushup Gel Toothpaste"
+    category: "oral_care"
+    is_hanger: false
+    company: "Colgate-Palmolive"
+
+  # ==== SKIN CARE - UBL ====
+
+  # Glow & Lovely
+  "glow_lovely_mv_cr":
+    name: "Glow & Lovely Multivitamin Cream"
+    category: "skin_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "glow_lovely_mv_cr_rotate":
+    name: "Glow & Lovely Multivitamin Cream"
+    category: "skin_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "glow_handsome_mn":
+    name: "Glow Handsome Men"
+    category: "skin_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "glow_handsome_mn_rotate":
+    name: "Glow Handsome Men"
+    category: "skin_care"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "glow_n_ lovely_hanger":
+    name: "Glow & Lovely Sachet Hanger"
+    category: "skin_care"
+    is_hanger: true
+    company: "Unilever Bangladesh Limited"
+
+  # ==== SKIN CLEANSING - UBL ====
+
+  # Lifebuoy
+  "lifebuoy_aloe_vera_shampoo":
+    name: "Lifebuoy Aloe Vera Body Wash"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "lifebuoy_aloe_vera_shampoo_rotate":
+    name: "Lifebuoy Aloe Vera Body Wash"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "lifebuoy_br_lmn_fr_rl":
+    name: "Lifebuoy Bar Lemon Fresh Relaunch"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "lifebuoy_br_lmn_fr_rl_rotate":
+    name: "Lifebuoy Bar Lemon Fresh Relaunch"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "lifebuoy_skn_br_total":
+    name: "Lifebuoy Skin Bar Total 10"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "lifebuoy_skn_br_total_rotate":
+    name: "Lifebuoy Skin Bar Total 10"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "lifebuoy_hanger":
+    name: "Lifebuoy Sachet Hanger"
+    category: "skin_cleansing"
+    is_hanger: true
+    company: "Unilever Bangladesh Limited"
+
+  # Lux
+  "lux_bar_sftc_flw_lss_glw":
+    name: "Lux Bar Soft Touch Flawless Glow"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "lux_bar_sftc_flw_lss_glw_rotate":
+    name: "Lux Bar Soft Touch Flawless Glow"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "lux_sk_bar_vltc_bright_glow":
+    name: "Lux Skin Bar Velvet Touch Bright Glow"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "lux_sk_bar_vltc_bright_glow_rotate":
+    name: "Lux Skin Bar Velvet Touch Bright Glow"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "lux_hanger":
+    name: "Lux Sachet Hanger"
+    category: "skin_cleansing"
+    is_hanger: true
+    company: "Unilever Bangladesh Limited"
+
+  # ==== SKIN CLEANSING - COMPETITOR ====
+
+  "dettol_soap_original":
+    name: "Dettol Soap Original"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "Reckitt Benckiser"
+  "meril_mini_soap":
+    name: "Meril Mini Soap"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "Square Toiletries Ltd"
+  "savlon_fresh_soap":
+    name: "Savlon Fresh Soap"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "ACI Limited"
+  "tibet_luxury_soap":
+    name: "Tibet Luxury Soap"
+    category: "skin_cleansing"
+    is_hanger: false
+    company: "Kohinoor Chemical Company"
+
+  # ==== NUTRITION - UBL ====
+
+  # Glucomax
+  "glucomax_d_ahfd_std_sac":
+    name: "Glucomax D AHFD Standard Sachet"
+    category: "nutrition"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "glucomax_d_ahfd_std_sac_rotate":
+    name: "Glucomax D AHFD Standard Sachet"
+    category: "nutrition"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "gluco_hanger":
+    name: "Glucomax Sachet Hanger"
+    category: "nutrition"
+    is_hanger: true
+    company: "Unilever Bangladesh Limited"
+
+  # Horlicks
+  "horlicks_ahfd_std_ctsl":
+    name: "Horlicks AHFD Standard CTSL"
+    category: "nutrition"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "horlicks_ahfd_std_ctsl_rotate":
+    name: "Horlicks AHFD Standard CTSL"
+    category: "nutrition"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "horlicks_fnt_junr_st_2":
+    name: "Horlicks Junior Stage 2"
+    category: "nutrition"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "horlic_hanger":
+    name: "Horlicks Sachet Hanger"
+    category: "nutrition"
+    is_hanger: true
+    company: "Unilever Bangladesh Limited"
+
+  # ==== NUTRITION - COMPETITOR ====
+
+  "dano_daily_pushti_milk_powder":
+    name: "Dano Daily Pushti Milk Powder"
+    category: "nutrition"
+    is_hanger: false
+    company: "Arla Foods"
+
+  # ==== FABRIC - UBL ====
+
+  # Surf Excel
+  "surf_excel_std_pwdr_atls":
+    name: "Surf Excel Standard Powder Atlas"
+    category: "fabric"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "surf_excel_std_pwdr_atls_rotate":
+    name: "Surf Excel Standard Powder Atlas"
+    category: "fabric"
+    is_hanger: false
+    company: "Unilever Bangladesh Limited"
+  "surf_excel_hanger":
+    name: "Surf Excel Sachet Hanger"
+    category: "fabric"
+    is_hanger: true
+    company: "Unilever Bangladesh Limited"
+
+  # Wheel
+  "wheel_hanger":
+    name: "Wheel Sachet Hanger"
+    category: "fabric"
+    is_hanger: true
+    company: "Unilever Bangladesh Limited"
+
+  # ==== MINI MEALS - COMPETITOR ====
+
+  "mr_noodles_hanger":
+    name: "Mr. Noodles Hanger"
+    category: "mini_meals"
+    is_hanger: true
+    company: "Competitor"
+  "tazza_hanger":
+    name: "Tazza Hanger"
+    category: "mini_meals"
+    is_hanger: true
+    company: "Competitor"
+
+# Sachet to Hanger Mappings (for slot adherence check)
+# Maps sachet AI class name to expected hanger AI class name
+sachet_to_hanger:
+  # Clear sachets → clear_hanger
+  "clear_men_shamp_csm": "clear_hanger"
+  "clear_men_shamp_csm_rotate": "clear_hanger"
+  "clear_shmp_cac": "clear_hanger"
+  "clear_shmp_cac_rotate": "clear_hanger"
+
+  # Clinic Plus sachets → No hanger (N/A for slot_adherence)
+  # "clinic_plus_smp_stl_hl_cs": not mapped
+  # "clinic_plus_smp_stl_hl_cs_rotate": not mapped
+
+  # Dove sachets → dove_hanger
+  "dove_cndtionr": "dove_hanger"
+  "dove_cndtionr_rotate": "dove_hanger"
+  "dove_shampo": "dove_hanger"
+  "dove_shampo_rotate": "dove_hanger"
+  "dove_intensive_repair_dec25": "dove_hanger"
+  "dove_intensive_repair_rotate_dec25": "dove_hanger"
+
+  # Sunsilk sachets → sunsilk_hanger
+  "sunsilk_sm_blk_sprk": "sunsilk_hanger"
+  "sunsilk_sm_blk_sprk_rotate": "sunsilk_hanger"
+  "sunsilk_sm_tl_ocn_sr_3t": "sunsilk_hanger"
+  "sunsilk_sm_tl_ocn_sr_3t_rotate": "sunsilk_hanger"
+  "sunsilk_smp_hfs_ocsr": "sunsilk_hanger"
+  "sunsilk_smp_hfs_ocsr_rotate": "sunsilk_hanger"
+  "sunsilk_cond_hfs_serend": "sunsilk_hanger"
+  "sunsilk_cond_hfs_serend_rotate": "sunsilk_hanger"
+
+  # Closeup sachets → closeup_hanger
+  "close_up_tp_mc_mfr_wofdi": "closeup_hanger"
+  "close_up_tp_mc_mfr_wofdi_rotate": "closeup_hanger"
+
+  # Glow & Lovely sachets → glow_n_ lovely_hanger
+  "glow_lovely_mv_cr": "glow_n_ lovely_hanger"
+  "glow_lovely_mv_cr_rotate": "glow_n_ lovely_hanger"
+  "glow_handsome_mn": "glow_n_ lovely_hanger"
+  "glow_handsome_mn_rotate": "glow_n_ lovely_hanger"
+
+  # Lifebuoy sachets → lifebuoy_hanger
+  "lifebuoy_aloe_vera_shampoo": "lifebuoy_hanger"
+  "lifebuoy_aloe_vera_shampoo_rotate": "lifebuoy_hanger"
+  "lifebuoy_br_lmn_fr_rl": "lifebuoy_hanger"
+  "lifebuoy_br_lmn_fr_rl_rotate": "lifebuoy_hanger"
+  "lifebuoy_skn_br_total": "lifebuoy_hanger"
+  "lifebuoy_skn_br_total_rotate": "lifebuoy_hanger"
+
+  # Lux sachets → lux_hanger
+  "lux_bar_sftc_flw_lss_glw": "lux_hanger"
+  "lux_bar_sftc_flw_lss_glw_rotate": "lux_hanger"
+  "lux_sk_bar_vltc_bright_glow": "lux_hanger"
+  "lux_sk_bar_vltc_bright_glow_rotate": "lux_hanger"
+
+  # Glucomax sachets → gluco_hanger
+  "glucomax_d_ahfd_std_sac": "gluco_hanger"
+  "glucomax_d_ahfd_std_sac_rotate": "gluco_hanger"
+
+  # Horlicks sachets → horlic_hanger
+  "horlicks_ahfd_std_ctsl": "horlic_hanger"
+  "horlicks_ahfd_std_ctsl_rotate": "horlic_hanger"
+  "horlicks_fnt_junr_st_2": "horlic_hanger"
+
+  # Surf Excel sachets → surf_excel_hanger
+  "surf_excel_std_pwdr_atls": "surf_excel_hanger"
+  "surf_excel_std_pwdr_atls_rotate": "surf_excel_hanger"
+
+# Unilever Brand Hangers (for brand exclusivity check)
+unilever_hangers:
+  - "clear_hanger"
+  - "closeup_hanger"
+  - "dove_hanger"
+  - "glow_n_ lovely_hanger"
+  - "gluco_hanger"
+  - "horlic_hanger"
+  - "lifebuoy_hanger"
+  - "lux_hanger"
+  - "sunsilk_hanger"
+  - "surf_excel_hanger"
+  - "wheel_hanger"

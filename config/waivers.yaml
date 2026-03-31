@@ -1,0 +1,47 @@
+# Product Waivers Configuration
+# Simple toggle system for temporarily excluding products from compliance calculations
+# When enabled: true, product is excluded from variant compliance scoring
+# When enabled: false (or absent), product is included in compliance scoring
+
+waivers:
+  # February 2026 Product Waivers
+  # - product: "Pond's Oil Control Super Light Gel 98g"
+  #   enabled: true
+  #   reason: "Stock availability issue"
+  
+  # - product: "Pond's Oil Control Light Moisturiser 98g"
+  #   enabled: true
+  #   reason: "Stock availability issue"
+  
+  # - product: "Glow & Lovely Sunscreen SPF30 PA++ 50g"
+  #   enabled: true
+  #   reason: "Stock availability issue"
+  
+  # - product: "Glow & Lovely Sunscreen SPF50 PA++ 50g"
+  #   enabled: true
+  #   reason: "Stock availability issue"
+  
+  - product: "Dove Conditioner Hairfall Rescue 170ml"
+    enabled: true
+    reason: "Stock availability issue"
+  
+  # - product: "Dove Conditioner Intense Repair 170ml"
+  #   enabled: true
+  #   reason: "Stock availability issue"
+  
+  # - product: "Dove Shampoo Nourishing Oil 170ml"
+  #   enabled: true
+  #   reason: "Stock availability issue"
+  
+  # - product: "Dove Shampoo OXG 170ml"
+  #   enabled: true
+  #   reason: "Stock availability issue"
+  
+  - product: "Chocolate Horlicks Jar"
+    enabled: true
+    reason: "Stock availability issue"
+
+# Usage:
+# - Set enabled: true to exclude product from compliance
+# - Set enabled: false to include product in compliance
+# - Remove entry or set enabled: false to re-enable compliance checking

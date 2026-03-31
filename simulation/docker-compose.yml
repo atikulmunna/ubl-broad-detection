@@ -1,0 +1,88 @@
+services:
+  localstack:
+    image: localstack/localstack:4.11.1
+    container_name: localstack_aws
+    ports:
+      - "4566:4566" 
+      - "4510-4559:4510-4559"
+    environment:
+      - SERVICES=s3,sqs
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - AWS_DEFAULT_REGION=ap-southeast-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - LOCALSTACK_HOST=localstack
+    volumes:
+      - "./localstack-init:/etc/localstack/init/ready.d"
+      - "localstack-data:/var/lib/localstack"
+    networks:
+      - ubl-simulation-network
+  
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend-api
+    ports:
+      - "8000:8000"
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=ap-southeast-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - S3_BUCKET=ubl-shop-audits
+      - SQS_AI_RESULTS_QUEUE_URL=http://localstack:4566/000000000000/ubl-ai-results-queue
+      - PYTHONUNBUFFERED=1
+      - API_KEY=${API_KEY:-}
+      - ALLOWED_ORIGINS=*
+      - MAX_IMAGE_SIZE_MB=15
+    depends_on:
+      - localstack
+    networks:
+      - ubl-simulation-network
+    command: sh -c "sleep 15 && python -u main.py"
+
+  ai-server:
+    build:
+      context: ..  # Build from root directory
+      dockerfile: Dockerfile  # Use root Dockerfile
+    container_name: ai-server
+    # GPU support - uncomment if using NVIDIA GPU
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - USE_LOCALSTACK=true  # Enable LocalStack mode
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=ap-southeast-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - S3_BUCKET=ubl-shop-audits
+      - SQS_IMAGE_QUEUE_URL=http://localstack:4566/000000000000/ubl-image-processing-queue
+      - SQS_RESULTS_QUEUE_URL=http://localstack:4566/000000000000/ubl-ai-results-queue
+      - PYTHONUNBUFFERED=1
+      - NUM_INFERENCE_WORKERS=${NUM_INFERENCE_WORKERS:-4}
+    volumes:
+      # Models already copied in Dockerfile, but mount for development
+      - "../models:/app/models:ro"
+      # Config already copied in Dockerfile, but mount for development
+      - "../config:/app/config:ro"
+    depends_on:
+      - localstack
+    networks:
+      - ubl-simulation-network
+    command: >
+      sh -c "sleep 15 && python3 main.py"
+
+
+networks:
+  ubl-simulation-network:
+    driver: bridge
+
+volumes:
+  localstack-data:

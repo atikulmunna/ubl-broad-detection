@@ -1,0 +1,101 @@
+# UBL Product Analysis Configuration
+# Adjust these parameters to tune detection performance
+
+# Worker configuration
+num_workers: 3  # Number of parallel inference workers (higher = more throughput, more GPU memory)
+
+# Model loading strategy
+per_worker_models: false  # true: Each worker gets separate model instances (YOLO-recommended, uses more VRAM)
+                          # false: Shared models with CUDA streams (memory efficient, 4x less VRAM)
+
+# Model paths (YOLO .pt model files)
+models:
+  exclusivity: "models/EXCLUSIVITY.pt"  # Detects non-UBL products (Fixed Shelf only)
+  sos_det: "models/SOS-Detection.pt"   # Stage 1: Product detection (1 class: product)
+  sos_cls: "models/SOS-Classification.pt"  # Stage 2: Brand classification (47 classes)
+  qpds: "models/QPDS.pt"  # Used for Fixed Shelf detection (legacy single-stage)
+  qpds_seg: "models/QPDS-seg.pt"  # 2-stage: Instance segmentation (Stage 1)
+  qpds_cls: "models/QPDS-cls.pt"  # 2-stage: Product classification (Stage 2)
+  shelftalker: "models/Shelftalker.pt"
+  sachet: "models/SACHET_YOLO11X.pt"
+  posm: "models/POSM_YOLO11X.pt"
+  posm_comp: "models/POSM_COMP.pt"  # Competitor POSM detection (21 classes)
+
+# Share of Shelf Analysis
+share_of_shelf:
+  det_conf: 0.25            # Stage 1: Detection confidence threshold (SOS-Detection)
+  cls_conf: 0.50            # Stage 2: Classification confidence threshold (SOS-Classification)
+  cls_batch_size: 8         # Stage 2: Batch size for classification (higher = faster, more VRAM)
+
+# Fixed Shelf Analysis
+fixed_shelf:
+  # 2-Stage Pipeline Configuration
+  use_two_stage: true       # Enable 2-stage seg+cls pipeline (true) or legacy single-stage (false)
+  seg_conf: 0.20             # Stage 1: Segmentation confidence threshold
+  cls_conf: 0.30             # Stage 2: Classification confidence threshold
+  cls_batch_size: 8          # Stage 2: Batch size for classification (higher = faster but more GPU memory)
+  
+  # Legacy Single-Stage Configuration
+  shelftalker_conf: 0.15    # Confidence for shelftalker detection (lower = more sensitive)
+  ubl_conf: 0.30            # Confidence for product detection within planogram (YOLO threshold)
+  exclusivity_conf: 0.95    # Confidence for non-UBL product detection (higher = fewer false positives)
+  expand_margin: 0.25      # Inward tightening for shelftalker polygon ROI (0.05 = shrink 5% toward centroid)
+
+  # Planogram-inferred ROI (fallback when shelftalker ROI fails)
+  planogram_roi_match_threshold: 0.50  # Min ratio of detected/expected products to infer ROI (0.50 = 50%)
+  planogram_roi_margin: 0.00           # Margin to expand inferred ROI (0.00 = 0%)
+  
+  # DBSCAN clustering for planogram ROI (filters noise/scattered products)
+  dbscan_eps_ratio: 0.10               # Cluster radius as ratio of image width (0.15 = 15% of width = ~162px)
+  dbscan_min_samples_ratio: 0.10       # Min samples as ratio of matched products (0.10 = 10%)
+  dbscan_min_samples_absolute: 5       # Absolute minimum samples for cluster (5 products)
+
+# Sachet Detection
+sachet:
+  confidence: 0.30          # Confidence threshold for sachet detection
+  horizontal_overlap_threshold: 0.5  # Sachet must have 50% horizontal overlap with hanger (0.5 = at least half of sachet width overlaps)
+  slot_adherence_threshold: 80  # Percentage of correctly placed sachets required for "Yes" adherence (80 = 80%)
+
+# POSM Detection
+posm:
+  confidence: 0.30         # Confidence threshold for POSM detection
+  cap_visible_to_planned: true  # Cap reported visible_qty at planned_qty (prevents overcounting shared ai_classes)
+
+# SOVM (Share of Voice Measurement) - POSM vs Competitor detection
+sovm:
+  ubl_confidence: 0.30     # Confidence for UBL POSM detection
+  comp_confidence: 0.30    # Confidence for competitor POSM detection
+
+# Experimental broad retail detection on labs branch
+retail_experiment:
+  enabled: true
+  det_conf: 0.25
+  cls_conf: 0.50
+  cls_batch_size: 8
+  top_k_skus: 5
+  unique_sku_match_limit: 1
+
+# Product Clustering (optional - for shelf row detection)
+clustering:
+  enabled: false
+  min_distance: 40          # Minimum clustering distance in pixels
+  distance_ratio: 0.04      # Clustering distance as ratio of image height
+  min_products_per_row: 3   # Minimum products required to form a row
+
+# General settings
+general:
+  image_quality: 100         # JPEG quality for temporary files (1-100)
+  verbose: true             # Print processing steps
+
+# Store Compliance Thresholds
+store_compliance:
+  total_compliance_pass: 80   # Used when no CSD present; Total_Compliance >= threshold → Success
+
+# Retake Thresholds - determine when images need retaking
+retake_thresholds:
+  csd_overall_compliance: 80      # CSD: Retake="Yes" if overall_compliance < 80
+  sos_ubl_percentage: 60          # SOS: Retake="Yes" if share_percentage.ubl < 60
+  posm_accuracy: 60               # POSM: Retake="Yes" if ubl_posm_ai_accuracy < 60
+  sachet_enabled: false           # Sachet: always Retake="No"
+  sovm_enabled: false             # SOVM: always Retake="No" (passive observation)
+  sovm_ubl_percentage: 60         # SOVM: threshold if enabled

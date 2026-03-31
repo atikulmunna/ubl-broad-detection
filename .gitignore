@@ -1,0 +1,86 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# AI Models (large files - use git lfs or download separately)
+*.pt
+*.pth
+*.onnx
+*.engine
+*.trt
+*.h5
+*.pb
+
+# Logs
+*.log
+logs/
+*.out
+
+# Results
+results/
+outputs/
+temp/
+tmp/
+
+# Docker
+.dockerignore
+
+# AWS LocalStack
+localstack-data/
+
+# Gradio
+.gradio/
+
+# Test files
+test_images/
+test_results/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Backup files
+*.bak
+*.backup
+*_old.*
+*_backup.*
+
+# Examples (if they contain sensitive data)
+examples/
+example/
+
+/old_files
+
+# Keep model.txt for documentation
+!models/model.txt
+
+legacy/*
+
+results/
+CLAUDE.md
+debug_output/
+
+*.agent.md
+copilot-instructions.md

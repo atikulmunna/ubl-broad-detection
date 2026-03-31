@@ -1,0 +1,57 @@
+# SOS Brand Norms
+# Keys match SOS-Classification model class names exactly (snake_case)
+# is_ubl: yes/no — determines UBL vs competitor classification
+# min_qty: minimum units required on shelf (UBL brands only)
+# display_name: human-readable brand name for output JSON
+
+brands:
+  # === UBL BRANDS ===
+  boost:      {is_ubl: "yes", min_qty: 1, display_name: "Boost"}
+  clear:      {is_ubl: "yes", min_qty: 1, display_name: "Clear"}
+  clinic_plus: {is_ubl: "yes",min_qty: 1, display_name: "Clinic Plus"}
+  closeup:    {is_ubl: "yes", min_qty: 1, display_name: "Closeup"}
+  domex:      {is_ubl: "yes", min_qty: 1, display_name: "Domex"}
+  dove:       {is_ubl: "yes", min_qty: 1, display_name: "Dove"}
+  gh:         {is_ubl: "yes", min_qty: 1, display_name: "Glow & Handsome"}
+  gl:         {is_ubl: "yes", min_qty: 1, display_name: "Glow & Lovely"}
+  horlicks:   {is_ubl: "yes", min_qty: 1, display_name: "Horlicks"}
+  lifebuoy:   {is_ubl: "yes", min_qty: 1, display_name: "Lifebuoy"}
+  lux:        {is_ubl: "yes", min_qty: 1, display_name: "Lux"}
+  maltova:    {is_ubl: "yes", min_qty: 1, display_name: "Maltova"}
+  pepsodent:  {is_ubl: "yes", min_qty: 1, display_name: "Pepsodent"}
+  ponds:      {is_ubl: "yes", min_qty: 1, display_name: "Pond's"}
+  rin:        {is_ubl: "yes", min_qty: 1, display_name: "Rin"}
+  simple:     {is_ubl: "yes", min_qty: 1, display_name: "Simple"}
+  sunsilk:    {is_ubl: "yes", min_qty: 1, display_name: "Sunsilk"}
+  surf_excel: {is_ubl: "yes", min_qty: 1, display_name: "Surf Excel"}
+  tresemme:   {is_ubl: "yes", min_qty: 1, display_name: "Tresemme"}
+  vaseline:   {is_ubl: "yes", min_qty: 1, display_name: "Vaseline"}
+  vim:        {is_ubl: "yes", min_qty: 1, display_name: "Vim"}
+  wheel:      {is_ubl: "yes", min_qty: 1, display_name: "Wheel"}
+
+  # === COMPETITOR BRANDS ===
+  aci_neem:    {is_ubl: "no", display_name: "ACI Neem"}
+  bactrol:     {is_ubl: "no", display_name: "Bactrol"}
+  colgate:     {is_ubl: "no", display_name: "Colgate"}
+  cosco:       {is_ubl: "no", display_name: "Cosco"}
+  dabur:       {is_ubl: "no", display_name: "Dabur"}
+  dano:        {is_ubl: "no", display_name: "Dano"}
+  dettol:      {is_ubl: "no", display_name: "Dettol"}
+  fast_wash:   {is_ubl: "no", display_name: "Fast Wash"}
+  fiera:       {is_ubl: "no", display_name: "Fiera"}
+  garnier:     {is_ubl: "no", display_name: "Garnier"}
+  ghari:       {is_ubl: "no", display_name: "Ghari"}
+  harpic:      {is_ubl: "no", display_name: "Harpic"}
+  himalaya:    {is_ubl: "no", display_name: "Himalaya"}
+  keya:        {is_ubl: "no", display_name: "Keya"}
+  magic_tooth: {is_ubl: "no", display_name: "Magic Tooth"}
+  marks:       {is_ubl: "no", display_name: "Marks"}
+  mediplus:    {is_ubl: "no", display_name: "Mediplus"}
+  meril:       {is_ubl: "no", display_name: "Meril"}
+  nivea:       {is_ubl: "no", display_name: "Nivea"}
+  parachute:   {is_ubl: "no", display_name: "Parachute"}
+  revive:      {is_ubl: "no", display_name: "Revive"}
+  sandalina:   {is_ubl: "no", display_name: "Sandalina"}
+  savlon:      {is_ubl: "no", display_name: "Savlon"}
+  sensodyne:   {is_ubl: "no", display_name: "Sensodyne"}
+  tibet:       {is_ubl: "no", display_name: "Tibet"}

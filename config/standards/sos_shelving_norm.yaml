@@ -1,0 +1,337 @@
+# SOS (Share of Shelf) Shelving Norms
+# Planned quantities based on actual model detection classes (92 classes total)
+
+# All products from sos.yaml with relaxed planned quantities (reduced by ~50%)
+products:
+  # Skin Care
+  - product: "Glow & Lovely Multivitamin Cream"
+    quantity: 4
+  - product: "Pond's Bright Beauty Cream"
+    quantity: 4
+  - product: "Pond's Bright Beauty Face Wash"
+    quantity: 3
+  - product: "Glow & Lovely Insta Glow Face Wash"
+    quantity: 3
+  - product: "Pond's Bright Miracle Face Wash"
+    quantity: 3
+  - product: "Pond's Oil Control Face Wash"
+    quantity: 3
+  - product: "Glow & Lovely Sunscreen Cream"
+    quantity: 2
+  - product: "Glow & Lovely Ayurvedic Cream"
+    quantity: 2
+  - product: "Glow & Lovely Foundation Cream"
+    quantity: 2
+  - product: "Pond's Bright Miracle Clay Face Wash"
+    quantity: 2
+  - product: "Pond's Bright Beauty Clay Face Wash"
+    quantity: 2
+  - product: "Pond's Vanishing Cream"
+    quantity: 2
+  - product: "Glow & Lovely Winter Cream"
+    quantity: 2
+  - product: "Glow & Handsome Men"
+    quantity: 2
+  
+  # Hair Care - Sunsilk
+  - product: "Sunsilk Black Shine Small"
+    quantity: 1
+  - product: "Sunsilk Thick & Long Small"
+    quantity: 1
+  - product: "Sunsilk Hair Fall Solution"
+    quantity: 1
+  - product: "Sunsilk Black Shine Large"
+    quantity: 1
+  - product: "Sunsilk Thick & Long Large"
+    quantity: 1
+  - product: "Sunsilk Onion"
+    quantity: 1
+  - product: "Sunsilk Fresh Volume"
+    quantity: 1
+  - product: "Sunsilk Hair Root Revival"
+    quantity: 1
+  - product: "Sunsilk Hair Fall Solution Rinse"
+    quantity: 1
+  - product: "Sunsilk Serum 25ml"
+    quantity: 1
+
+  # Hair Care - Dove
+  - product: "Dove Hair Fall Rescue Small"
+    quantity: 2
+  - product: "Dove Intense Repair Small"
+    quantity: 2
+  - product: "Dove Conditioner"
+    quantity: 2
+  - product: "Dove Hair Fall Rescue Large"
+    quantity: 2
+  - product: "Dove Intense Repair Large"
+    quantity: 2
+  - product: "Dove Nourishing Oil"
+    quantity: 2
+  - product: "Dove Hair Growth Ritual"
+    quantity: 1
+  - product: "Dove Oxygen Moisture"
+    quantity: 1
+  - product: "Dove Mask 25ml"
+    quantity: 1
+
+  # Hair Care - Clear
+  - product: "Clear Cool Sport Menthol Small"
+    quantity: 4
+  - product: "Clear Anti Dandruff"
+    quantity: 4
+  - product: "Clear Cool Sport Menthol Large"
+    quantity: 3
+  - product: "Clear Anti Hair Fall"
+    quantity: 3
+
+  # Hair Care - Tresemme
+  - product: "Tresemme Keratin Smooth Small"
+    quantity: 3
+  - product: "Tresemme Keratin Smooth Large"
+    quantity: 2
+  - product: "Tresemme Keratin Smooth White"
+    quantity: 2
+  - product: "Tresemme Climate Control"
+    quantity: 2
+  - product: "Tresemme Shampoo Bond Plex"
+    quantity: 2
+  - product: "Tresemme Mask 25ml"
+    quantity: 1
+  - product: "Tresemme Serum 25ml"
+    quantity: 1
+  
+  # Nutrition
+  - product: "Horlicks Standard 500g"
+    quantity: 6
+  - product: "Horlicks Junior 500g"
+    quantity: 5
+  - product: "Horlicks Mother"
+    quantity: 3
+  - product: "Horlicks Chocolate"
+    quantity: 3
+  - product: "Horlicks Women Plus"
+    quantity: 2
+  - product: "Horlicks Lite"
+    quantity: 2
+  - product: "Horlicks Junior Stage 1"
+    quantity: 2
+  - product: "Maltova Standard"
+    quantity: 3
+  - product: "Boost Standard 400g"
+    quantity: 4
+
+  # Oral Care - Pepsodent
+  - product: "Pepsodent Sensitive Expert"
+    quantity: 4
+  - product: "Pepsodent Germicheck"
+    quantity: 5
+  - product: "Pepsodent Advanced Salt"
+    quantity: 4
+  - product: "Pepsodent Powder"
+    quantity: 2
+
+  # Oral Care - Closeup
+  - product: "Closeup Menthol Fresh"
+    quantity: 4
+  - product: "Closeup Lemon Salt"
+    quantity: 4
+  - product: "Closeup Everfresh"
+    quantity: 3
+
+  # Skin Care - Body Lotion
+  - product: "Vaseline Total Moisture"
+    quantity: 3
+  - product: "Vaseline Healthy White"
+    quantity: 3
+  - product: "Vaseline Aloe Fresh"
+    quantity: 3
+  - product: "Vaseline Gluta-Hya Flawless"
+    quantity: 2
+  - product: "Vaseline Gluta-Hya Radiant"
+    quantity: 2
+  - product: "Dove Natural Radiance Lotion"
+    quantity: 2
+  
+  # Skin Cleansing
+  - product: "Lux Bar Flawless Glow"
+    quantity: 5
+  - product: "Lux Bar Bright Beauty"
+    quantity: 5
+  - product: "Lux Black Orchid"
+    quantity: 3
+  - product: "Lux French Rose"
+    quantity: 3
+  - product: "Lux Brightening Vitamin"
+    quantity: 3
+  - product: "Lux Freesia Scent"
+    quantity: 3
+  - product: "Lux Fresh Splash"
+    quantity: 3
+  - product: "Lifebuoy Bar Total 10"
+    quantity: 4
+  - product: "Lifebuoy Bar Lemon Fresh"
+    quantity: 3
+  - product: "Lifebuoy Bar Care"
+    quantity: 3
+  - product: "Dove Bar"
+    quantity: 3
+  - product: "Lifebuoy Pump"
+    quantity: 2
+  - product: "Lifebuoy Refill Pouch"
+    quantity: 3
+  - product: "Lifebuoy Refill Bottle"
+    quantity: 2
+
+
+  # Home And Hygiene
+  - product: "Vim Bar"
+    quantity: 4
+  - product: "Vim Liquid 500ml"
+    quantity: 5
+  - product: "Vim Liquid 1 Liter"
+    quantity: 3
+  - product: "Vim Liquid Refill Pouch"
+    quantity: 4
+  - product: "Domex Lime Fresh"
+    quantity: 3
+  - product: "Domex Ocean Fresh"
+    quantity: 3
+
+
+  # Fabric
+  - product: "Surf Excel Matic 500ml"
+    quantity: 4
+  - product: "Surf Excel Matic 1 Liter"
+    quantity: 3
+  - product: "Surf Excel Powder"
+    quantity: 3
+  - product: "Wheel Powder 500g"
+    quantity: 4
+  - product: "Rin Powder 500g"
+    quantity: 4
+  
+
+  
+
+
+
+# Product name mappings (AI detection name -> SOS standard name)
+product_mappings:
+  # Skin Care
+  "gl_mltvit_crm": "Glow & Lovely Multivitamin Cream"
+  "ponds_white_beauty_crm": "Pond's Bright Beauty Cream"
+  "ponds_white_beauty_fw": "Pond's Bright Beauty Face Wash"
+  "gl_insta_glow_fw": "Glow & Lovely Insta Glow Face Wash"
+  "ponds_pure_white_fw": "Pond's Bright Miracle Face Wash"
+  "ponds_oil_control_fw": "Pond's Oil Control Face Wash"
+  "gl_sunscrn_crm": "Glow & Lovely Sunscreen Cream"
+  "gl_aryuvedic_crm": "Glow & Lovely Ayurvedic Cream"
+  "gl_foundation_crm": "Glow & Lovely Foundation Cream"
+  "ponds_pure_white_clay_fw": "Pond's Bright Miracle Clay Face Wash"
+  "ponds_white_beauty_clay_fw": "Pond's Bright Beauty Clay Face Wash"
+  "ponds_vanish": "Pond's Vanishing Cream"
+  "gl_winter": "Glow & Lovely Winter Cream"
+  
+  # Hair Care - Sunsilk
+  "sunsilk_black_small": "Sunsilk Black Shine Small"
+  "sunsilk_tl_small": "Sunsilk Thick & Long Small"
+  "sunsilk_hfs": "Sunsilk Hair Fall Solution"
+  "sunsilk_black_large": "Sunsilk Black Shine Large"
+  "sunsilk_tl_large": "Sunsilk Thick & Long Large"
+  "sunsilk_onion": "Sunsilk Onion"
+  "sunsilk_fresh": "Sunsilk Fresh Volume"
+  "sunsilk_volume": "Sunsilk Fresh Volume"
+  "sunsilk_hrr": "Sunsilk Hair Root Revival"
+  "sunsilk_hfs_rinse": "Sunsilk Hair Fall Solution Rinse"
+  "sunsilk_serum_25": "Sunsilk Serum 25ml"
+  
+  # Hair Care - Dove
+  "dove_hfr_small": "Dove Hair Fall Rescue Small"
+  "dove_irp_small": "Dove Intense Repair Small"
+  "dove_cond": "Dove Conditioner"
+  "dove_hfr_large": "Dove Hair Fall Rescue Large"
+  "dove_irp_large": "Dove Intense Repair Large"
+  "dove_no": "Dove Nourishing Oil"
+  "dove_hg": "Dove Hair Growth Ritual"
+  "dove_oxg": "Dove Oxygen Moisture"
+  "dove_mask_25": "Dove Mask 25ml"
+  
+  # Hair Care - Clear
+  "clear_csm_small": "Clear Cool Sport Menthol Small"
+  "clear_cac": "Clear Anti Dandruff"
+  "clear_csm_large": "Clear Cool Sport Menthol Large"
+  "clear_ahf": "Clear Anti Hair Fall"
+  
+  # Hair Care - Tresemme
+  "tresemme_ks_small": "Tresemme Keratin Smooth Small"
+  "tresemme_ks_large": "Tresemme Keratin Smooth Large"
+  "tresemme_ks_white": "Tresemme Keratin Smooth White"
+  "tresemme_cr": "Tresemme Climate Control"
+  "treseme_sampoo_bond_plex": "Tresemme Shampoo Bond Plex"
+  "tresemme_mask_25": "Tresemme Mask 25ml"
+  "tresemme_serum_25": "Tresemme Serum 25ml"
+  
+  # Nutrition
+  "horlicks_std": "Horlicks Standard 500g"
+  "horlicks_junior": "Horlicks Junior 500g"
+  "horlicks_mother": "Horlicks Mother"
+  "horlicks_choco": "Horlicks Chocolate"
+  "horlicks_women": "Horlicks Women Plus"
+  "horlicks_lite": "Horlicks Lite"
+  "horlicks_junior_s1": "Horlicks Junior Stage 1"
+  "maltova_std": "Maltova Standard"
+  "boost_std": "Boost Standard 400g"
+  
+  # Oral Care
+  "pepsodent_sensitive_expert": "Pepsodent Sensitive Expert"
+  "pepsodent_germicheck": "Pepsodent Germicheck"
+  "pepsodent_advanced_salt": "Pepsodent Advanced Salt"
+  "pepsodent_powder": "Pepsodent Powder"
+  "closeup_mf": "Closeup Menthol Fresh"
+  "closeup_lemon_salt": "Closeup Lemon Salt"
+  "closeup_ef": "Closeup Everfresh"
+  
+  # Body Lotion
+  "vaseline_tm": "Vaseline Total Moisture"
+  "vaseline_hw": "Vaseline Healthy White"
+  "vaseline_aloe": "Vaseline Aloe Fresh"
+  "vaseline_gluta_flawless": "Vaseline Gluta-Hya Flawless"
+  "vaseline_gluta_rad": "Vaseline Gluta-Hya Radiant"
+  "dove_nr_lotion": "Dove Natural Radiance Lotion"
+  
+  # Bar Soap
+  "lux_bar_flawless": "Lux Bar Flawless Glow"
+  "lux_bar_bright_glow": "Lux Bar Bright Beauty"
+  "lux_blk_orchd": "Lux Black Orchid"
+  "lux_french_rose": "Lux French Rose"
+  "lux_brightening_vitamin": "Lux Brightening Vitamin"
+  "lux_freeasia_scnt": "Lux Freesia Scent"
+  "lux_bar_fresh": "Lux Fresh Splash"
+  "lifebuoy_bar_total": "Lifebuoy Bar Total 10"
+  "lifebuoy_bar_lemon": "Lifebuoy Bar Lemon Fresh"
+  "lifebuoy_bar_care": "Lifebuoy Bar Care"
+  "dove_bar": "Dove Bar"
+  "vim_bar": "Vim Bar"
+  
+  # Liquid Cleaning
+  "vim_liquid_500ml": "Vim Liquid 500ml"
+  "vim_liquid_1l": "Vim Liquid 1 Liter"
+  "vim_liquid_refill_pouch": "Vim Liquid Refill Pouch"
+  "lifebuoy_pump": "Lifebuoy Pump"
+  "lifebuoy_refill_pouch": "Lifebuoy Refill Pouch"
+  "lifebuoy_refill_bottle": "Lifebuoy Refill Bottle"
+  
+  # Detergent
+  "surf_excel_matic_500ml": "Surf Excel Matic 500ml"
+  "surf_excel_matic_1l": "Surf Excel Matic 1 Liter"
+  "surf_excel_powder": "Surf Excel Powder"
+  "wheel_powder_500gm": "Wheel Powder 500g"
+  "rin_powder_500g": "Rin Powder 500g"
+  
+  # Toilet Cleaner
+  "domex_lime": "Domex Lime Fresh"
+  "domex_ocean": "Domex Ocean Fresh"
+  
+  # Men's Grooming
+  "gh_men": "Glow & Handsome Men"

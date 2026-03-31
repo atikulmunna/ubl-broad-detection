@@ -1,0 +1,114 @@
+name: Deploy AI Worker to Development
+
+on:
+  push:
+    branches:
+      - dev
+    paths-ignore:
+      - 'models/**'
+      - 'docs/**'
+      - 'simulation/**'
+      - '*.md'
+      - '.gitignore'
+
+env:
+  AWS_REGION: ap-southeast-1
+  ECR_REPOSITORY: u-lens-development-ai-worker
+
+jobs:
+  deploy:
+    name: Build and Deploy AI Worker to Development
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::919246573418:role/u-lens-production-gh-ai-worker-cicd
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Free up disk space
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          
+          # Remove unnecessary tools and packages
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          
+          # Clean Docker
+          docker system prune -af --volumes
+          
+          echo "Disk space after cleanup:"
+          df -h
+      
+      - name: Build, tag, and push image to ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build Docker image (models not included - downloaded from S3 on EC2)
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
+          # Push to ECR
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+      
+      - name: Trigger Development EC2 to pull new image (via SSM)
+        run: |
+          echo "Triggering Development AI worker instances..."
+          
+          # Get running EC2 instances with Service=ai-worker OR ai-rechecker AND Environment=development tags
+          INSTANCE_IDS=$(aws ec2 describe-instances \
+            --filters "Name=tag:Service,Values=ai-worker,ai-rechecker" \
+                      "Name=tag:Environment,Values=development" \
+                      "Name=instance-state-name,Values=running" \
+            --query 'Reservations[*].Instances[*].InstanceId' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          if [ -n "$INSTANCE_IDS" ] && [ "$INSTANCE_IDS" != "None" ]; then
+            echo "Found Development AI worker instances: $INSTANCE_IDS"
+            
+            # Trigger update script via SSM
+            aws ssm send-command \
+              --document-name "AWS-RunShellScript" \
+              --targets "Key=tag:Service,Values=ai-worker,ai-rechecker" "Key=tag:Environment,Values=development" \
+              --parameters 'commands=["/usr/local/bin/update-ai-worker.sh"]' \
+              --comment "Development deployment from GitHub Actions" \
+              --region ${{ env.AWS_REGION }} || echo "SSM command failed - instance may not have SSM agent"
+            
+            echo "Update command sent to Development EC2 instances"
+          else
+            echo "No running Development AI worker instances found - image will be pulled on next startup"
+          fi
+      
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "Development AI Worker image pushed to ECR!"
+          echo ""
+          echo "Image: ${{ steps.build-image.outputs.image }}"
+          echo "Repository: ${{ env.ECR_REPOSITORY }}"
+          echo "Region: ${{ env.AWS_REGION }}"
+          echo ""
+          echo "Deployment behavior:"
+          echo "  • Running Development EC2: Triggered immediately via SSM"
+          echo "  • Stopped Development EC2: Will pull latest image on next startup"

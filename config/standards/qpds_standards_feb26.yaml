@@ -1,0 +1,580 @@
+# QPDS Standards - Auto-generated from PJP Data and PS.txt
+# Generated slab-based mappings
+#
+# Compliance Rules Reference:
+# - overall_threshold: Required % for overall compliance (null = not checked)
+# - variant_threshold: Required % for variant compliance (null = not checked)
+# - planogram_affects_success: If true, planogram adherence required to pass
+# - shelftalker_affects_success: If true, shelftalker presence required to pass
+# - exclusivity_affects_success: If true, exclusivity required to pass
+# - adjacency_affects_success: If true, adjacency rules apply (PS Perfect Store only)
+
+shelftalker_to_shelf_mapping:
+  DOUBLE_SHELF: da_ns_st_
+  SINGLE_SHELF: da_ns_st_
+  JUNIORS_CLEAN_CORNER: da_ns_st_jr_
+  LITE: da_ns_st_
+  ORAL_QPDS_JAN_26: da_toothpaste_st_
+  PRESTIGE_WINDOW: da_hair_care_st_
+  SKIN_INNOVATION_CORNER_Q1_26: da_ponds_st_
+  LUX_BODYWASH_DISPLAY_2026_SLAB_1: da_lux_st_
+  LUX_BODYWASH_DISPLAY_2026_SLAB_2: da_lux_st_
+  SKIN_CARE_PONDS_GOLD: da_ponds_st_
+  SKIN_CARE_GAL_GOLD: da_gal_st_
+  SKIN_CARE_PONDS_DIAMOND: da_ponds_st_
+  SKIN_CARE_GAL_DIAMOND: da_gal_st_
+  HAIR_CARE_DIAMOND_SLAB: da_hair_care_st_
+  HAIR_CARE_GOLD_SLAB: da_hair_care_st_
+
+expected_shelftalkers:
+  DOUBLE_SHELF: 5
+  SINGLE_SHELF: 4
+  JUNIORS_CLEAN_CORNER: 4
+  LITE: 4
+  ORAL_QPDS_JAN_26: 4
+  PRESTIGE_WINDOW: 4
+  SKIN_INNOVATION_CORNER_Q1_26: 4
+  LUX_BODYWASH_DISPLAY_2026_SLAB_1: 4
+  LUX_BODYWASH_DISPLAY_2026_SLAB_2: 4
+  SKIN_CARE_PONDS_GOLD: 4
+  SKIN_CARE_GAL_GOLD: 4
+  SKIN_CARE_PONDS_DIAMOND: 4
+  SKIN_CARE_GAL_DIAMOND: 4
+  HAIR_CARE_DIAMOND_SLAB: 4
+  HAIR_CARE_GOLD_SLAB: 4
+
+shelf_categories:
+  DOUBLE_SHELF: Nutrition
+  SINGLE_SHELF: Nutrition
+  JUNIORS_CLEAN_CORNER: Nutrition
+  LITE: Nutrition
+  ORAL_QPDS_JAN_26: Oral Care
+  PRESTIGE_WINDOW: Hair Care
+  SKIN_INNOVATION_CORNER_Q1_26: Skin Care
+  LUX_BODYWASH_DISPLAY_2026_SLAB_1: Skin Cleansing
+  LUX_BODYWASH_DISPLAY_2026_SLAB_2: Skin Cleansing
+  SKIN_CARE_PONDS_GOLD: Skin Care
+  SKIN_CARE_GAL_GOLD: Skin Care
+  SKIN_CARE_PONDS_DIAMOND: Skin Care
+  SKIN_CARE_GAL_DIAMOND: Skin Care
+  HAIR_CARE_DIAMOND_SLAB: Hair Care
+  HAIR_CARE_GOLD_SLAB: Hair Care
+
+shelf_types:
+  # Nutrition Store Feb'26
+  DOUBLE_SHELF:
+    min_shelftalkers: 5
+    compliance_rules:
+      overall_threshold: 100.0
+      variant_threshold: 50.0
+      planogram_affects_success: false
+      shelftalker_affects_success: false  # TODO: set true from 3rd Week of Feb'26
+      exclusivity_affects_success: true
+      adjacency_affects_success: false
+    products:
+    - product: Standard Horlicks Jar
+      quantity: 24
+      order: 1
+    - product: Chocolate Horlicks Jar
+      quantity: 16
+      order: 2
+  # Nutrition Store Feb'26
+  SINGLE_SHELF:
+    min_shelftalkers: 4
+    compliance_rules:
+      overall_threshold: 100.0
+      variant_threshold: 50.0
+      planogram_affects_success: false
+      shelftalker_affects_success: false  # TODO: set true from 3rd Week of Feb'26
+      exclusivity_affects_success: true
+      adjacency_affects_success: false
+    products:
+    - product: Chocolate Horlicks Jar
+      quantity: 8
+      order: 1
+    - product: Standard Horlicks Jar
+      quantity: 12
+      order: 2
+  # Nutrition Store Feb'26
+  JUNIORS_CLEAN_CORNER:
+    min_shelftalkers: 4
+    compliance_rules:
+      overall_threshold: 100.0
+      variant_threshold: 50.0
+      planogram_affects_success: false
+      shelftalker_affects_success: false  # TODO: set true from 3rd Week of Feb'26
+      exclusivity_affects_success: true
+      adjacency_affects_success: false
+    products:
+    - product: Horlicks Junior Jar Stage-2
+      quantity: 8
+      order: 1
+    - product: Horlicks Junior Jar Stage-1
+      quantity: 12
+      order: 2
+  # Nutrition Store Feb'26
+  LITE:
+    min_shelftalkers: 4
+    compliance_rules:
+      overall_threshold: 100.0
+      variant_threshold: 50.0
+      planogram_affects_success: false
+      shelftalker_affects_success: false  # TODO: set true from 3rd Week of Feb'26
+      exclusivity_affects_success: true
+      adjacency_affects_success: false
+    products:
+    - product: Chocolate Horlicks Jar
+      quantity: 4
+      order: 1
+    - product: Standard Horlicks Jar
+      quantity: 6
+      order: 2
+  # Pepsodent Salt Display
+  ORAL_QPDS_JAN_26:
+    min_shelftalkers: 4
+    compliance_rules:
+      overall_threshold: 100.0
+      variant_threshold: 100.0
+      planogram_affects_success: false
+      shelftalker_affects_success: false
+      exclusivity_affects_success: false
+      adjacency_affects_success: false
+    products:
+    - product: Pepsodent Advanced Salt 140g
+      quantity: 6
+      order: 1
+    - product: Closeup Lemon & Sea Salt 140g
+      quantity: 6
+      order: 2
+  # The Prestige Window
+  PRESTIGE_WINDOW:
+    min_shelftalkers: 4
+    compliance_rules:
+      overall_threshold: 90.0
+      variant_threshold: null  # not checked
+      planogram_affects_success: false
+      shelftalker_affects_success: false
+      exclusivity_affects_success: true
+      adjacency_affects_success: false
+    products:
+    - product: Dove Deep Repair Treatment Hair Mask 300ml
+      quantity: 6
+      order: 1
+    - product: Tresemme Keratin Smooth Hair Mask 300ml
+      quantity: 3
+      order: 2
+    - product: Tresemme Keratin Smooth Anti-Frizz Hair Serum 100ml
+      quantity: 4
+      order: 3
+    - product: Sunsilk Super Shine Hair Serum 100ml
+      quantity: 6
+      order: 4
+  # Skin Innovation Corner
+  SKIN_INNOVATION_CORNER_Q1_26:
+    min_shelftalkers: 4
+    compliance_rules:
+      overall_threshold: 90.0
+      variant_threshold: null  # not checked
+      planogram_affects_success: false
+      shelftalker_affects_success: false
+      exclusivity_affects_success: true
+      adjacency_affects_success: false
+    products:
+    - product: Pond's Oil Control Super Light Gel 98g
+      quantity: 8
+      order: 1
+    - product: Pond's Oil Control Light Moisturiser 98g
+      quantity: 8
+      order: 2
+  # Lux Bodywash QPDS
+  LUX_BODYWASH_DISPLAY_2026_SLAB_1:
+    min_shelftalkers: 4
+    compliance_rules:
+      overall_threshold: 80.0
+      variant_threshold: null  # not checked
+      planogram_affects_success: false
+      shelftalker_affects_success: false
+      exclusivity_affects_success: false
+      adjacency_affects_success: false
+    products:
+    - product: Lux Body Wash Orange Blossom & Vitamin C 245ml
+      quantity: 1
+      order: 1
+    - product: Lux Body Wash Black Orchid Scent & Juniper Oil 245ml
+      quantity: 3
+      order: 2
+    - product: Lux Body Wash Freesia Scent & Aloe Vera 245ml
+      quantity: 1
+      order: 3
+    - product: Lux Body Wash French Rose & Almond 245ml
+      quantity: 1
+      order: 4
+  # Lux Bodywash QPDS
+  LUX_BODYWASH_DISPLAY_2026_SLAB_2:
+    min_shelftalkers: 4
+    compliance_rules:
+      overall_threshold: 80.0
+      variant_threshold: null  # not checked
+      planogram_affects_success: false
+      shelftalker_affects_success: false
+      exclusivity_affects_success: false
+      adjacency_affects_success: false
+    products:
+    - product: Lux Body Wash Orange Blossom & Vitamin C 245ml
+      quantity: 2
+      order: 1
+    - product: Lux Body Wash Black Orchid Scent & Juniper Oil 245ml
+      quantity: 6
+      order: 2
+    - product: Lux Body Wash Freesia Scent & Aloe Vera 245ml
+      quantity: 2
+      order: 3
+    - product: Lux Body Wash French Rose & Almond 245ml
+      quantity: 2
+      order: 4
+  # PS Perfect Store - POND'S (80% threshold)
+  SKIN_CARE_PONDS_GOLD:
+    min_shelftalkers: 4
+    category_brand: PONDS  # for adjacency shelftalker waiver
+    compliance_rules:
+      overall_threshold: 80.0
+      variant_threshold: null  # not checked
+      planogram_affects_success: false
+      shelftalker_affects_success: false  # waived when common leg involved
+      exclusivity_affects_success: true
+      adjacency_affects_success: false  # adjacency only waives shelftalker, not a pass/fail
+    products:
+    - product: Pond's Face Wash Oil Control 100g
+      quantity: 8
+      order: 1
+    - product: Pond's Face Wash Bright Miracle Detox 100g
+      quantity: 8
+      order: 2
+    - product: Pond's Face Wash Bright Beauty 100g
+      quantity: 12
+      order: 3
+    - product: Pond's Bright Beauty Serum Cream 35g
+      quantity: 12
+      order: 4
+    - product: Pond's Oil Control Super Light Gel 98g
+      quantity: 4
+      order: 5
+    - product: Pond's Oil Control Light Moisturiser 98g
+      quantity: 4
+      order: 6
+  # PS Perfect Store - GAL (90% threshold)
+  SKIN_CARE_GAL_GOLD:
+    min_shelftalkers: 4
+    category_brand: GAL  # for adjacency shelftalker waiver
+    compliance_rules:
+      overall_threshold: 90.0
+      variant_threshold: null  # not checked
+      planogram_affects_success: false
+      shelftalker_affects_success: false  # waived when common leg involved
+      exclusivity_affects_success: true
+      adjacency_affects_success: false  # adjacency only waives shelftalker, not a pass/fail
+    products:
+    - product: Glow & Lovely Facewash Instaglow with Multivitamins 100g
+      quantity: 8
+      order: 1
+    - product: Glow & Lovely Facial Moisturiser Multi-Vitamin Cream 100g
+      quantity: 8
+      order: 2
+    - product: Glow & Lovely Facial Moisturiser Multi-Vitamin Cream 50g
+      quantity: 12
+      order: 3
+    - product: Glow & Lovely Sunscreen SPF30 PA++ 50g
+      quantity: 8
+      order: 4
+    - product: Glow & Lovely Sunscreen SPF50 PA++ 50g
+      quantity: 8
+      order: 5
+  # PS Perfect Store - POND'S (80% threshold)
+  SKIN_CARE_PONDS_DIAMOND:
+    min_shelftalkers: 4
+    category_brand: PONDS  # for adjacency shelftalker waiver
+    compliance_rules:
+      overall_threshold: 80.0
+      variant_threshold: null  # not checked
+      planogram_affects_success: false
+      shelftalker_affects_success: false  # waived when common leg involved
+      exclusivity_affects_success: true
+      adjacency_affects_success: false  # adjacency only waives shelftalker, not a pass/fail
+    products:
+    - product: Pond's Face Wash Oil Control 100g
+      quantity: 8
+      order: 1
+    - product: Pond's Face Wash Bright Miracle Detox 100g
+      quantity: 8
+      order: 2
+    - product: Pond's Face Wash Bright Beauty 100g
+      quantity: 16
+      order: 3
+    - product: Pond's Bright Beauty Serum Cream 35g
+      quantity: 12
+      order: 4
+    - product: Pond's Oil Control Super Light Gel 98g
+      quantity: 8
+      order: 5
+    - product: Pond's Oil Control Light Moisturiser 98g
+      quantity: 4
+      order: 6
+  # PS Perfect Store - GAL (90% threshold)
+  SKIN_CARE_GAL_DIAMOND:
+    min_shelftalkers: 4
+    category_brand: GAL  # for adjacency shelftalker waiver
+    compliance_rules:
+      overall_threshold: 90.0
+      variant_threshold: null  # not checked
+      planogram_affects_success: false
+      shelftalker_affects_success: false  # waived when common leg involved
+      exclusivity_affects_success: true
+      adjacency_affects_success: false  # adjacency only waives shelftalker, not a pass/fail
+    products:
+    - product: Glow & Lovely Facewash Instaglow with Multivitamins 100g
+      quantity: 12
+      order: 1
+    - product: Glow & Lovely Facial Moisturiser Multi-Vitamin Cream 100g
+      quantity: 8
+      order: 2
+    - product: Glow & Lovely Facial Moisturiser Multi-Vitamin Cream 50g
+      quantity: 12
+      order: 3
+    - product: Glow & Lovely Sunscreen SPF30 PA++ 50g
+      quantity: 8
+      order: 4
+    - product: Glow & Lovely Sunscreen SPF50 PA++ 50g
+      quantity: 12
+      order: 5
+  # PS Perfect Store - Hair Care (70% threshold)
+  HAIR_CARE_DIAMOND_SLAB:
+    min_shelftalkers: 4
+    category_brand: HAIRCARE  # for adjacency shelftalker waiver
+    compliance_rules:
+      overall_threshold: 70.0
+      variant_threshold: null  # not checked
+      planogram_affects_success: false
+      shelftalker_affects_success: false  # waived when common leg involved
+      exclusivity_affects_success: true
+      adjacency_affects_success: false  # adjacency only waives shelftalker, not a pass/fail
+    products:
+    - product: Dove Shampoo Hairfall Rescue 650ml
+      quantity: 6
+      order: 1
+    - product: Dove Shampoo Intensive Repair 650ml
+      quantity: 3
+      order: 2
+    - product: Dove Shampoo Hairfall Rescue 340ml
+      quantity: 6
+      order: 3
+    - product: Dove Shampoo Intensive Repair 340ml
+      quantity: 6
+      order: 4
+    - product: Clear Men Shampoo Cool Sport Menthol Anti Dandruff 330ml
+      quantity: 6
+      order: 5
+    - product: Sunsilk Shampoo Stunning Black Shine 375ml
+      quantity: 6
+      order: 6
+    - product: Sunsilk Shampoo Onion & Jojoba Oil 375ml
+      quantity: 6
+      order: 7
+    - product: Sunsilk Shampoo Lusciously Thick & Long 375ml
+      quantity: 6
+      order: 8
+    - product: Sunsilk Shampoo Hair Fall Solution 375ml
+      quantity: 6
+      order: 9
+    - product: Dove Conditioner Hairfall Rescue 170ml
+      quantity: 3
+      order: 10
+    - product: Dove Conditioner Intense Repair 170ml
+      quantity: 3
+      order: 11
+    - product: Sunsilk Rinse Out Conditioner HFS 180ml
+      quantity: 3
+      order: 12
+    - product: Sunsilk Super Shine Hair Serum 100ml
+      quantity: 8
+      order: 13
+  # PS Perfect Store - Hair Care (70% threshold)
+  HAIR_CARE_GOLD_SLAB:
+    min_shelftalkers: 4
+    category_brand: HAIRCARE  # for adjacency shelftalker waiver
+    compliance_rules:
+      overall_threshold: 70.0
+      variant_threshold: null  # not checked
+      planogram_affects_success: false
+      shelftalker_affects_success: false  # waived when common leg involved
+      exclusivity_affects_success: true
+      adjacency_affects_success: false  # adjacency only waives shelftalker, not a pass/fail
+    products:
+    - product: Dove Shampoo Hairfall Rescue 340ml
+      quantity: 12
+      order: 1
+    - product: Dove Shampoo Intensive Repair 340ml
+      quantity: 9
+      order: 2
+    - product: Clear Men Shampoo Cool Sport Menthol Anti Dandruff 330ml
+      quantity: 6
+      order: 3
+    - product: Sunsilk Shampoo Stunning Black Shine 375ml
+      quantity: 6
+      order: 4
+    - product: Sunsilk Shampoo Onion & Jojoba Oil 375ml
+      quantity: 6
+      order: 5
+    - product: Sunsilk Shampoo Lusciously Thick & Long 375ml
+      quantity: 6
+      order: 6
+    - product: Sunsilk Shampoo Hair Fall Solution 375ml
+      quantity: 3
+      order: 7
+    - product: Dove Conditioner Hairfall Rescue 170ml
+      quantity: 3
+      order: 8
+    - product: Dove Conditioner Intense Repair 170ml
+      quantity: 3
+      order: 9
+    - product: Sunsilk Rinse Out Conditioner HFS 180ml
+      quantity: 3
+      order: 10
+    - product: Sunsilk Super Shine Hair Serum 100ml
+      quantity: 6
+      order: 11
+
+# Product name mappings (AI detection class name -> QPDS standard name)
+# This helps match AI detections to QPDS products
+# Now simplified - Python script outputs proper case matching QPDS standards
+product_mappings:
+  # Nutrition Store - Horlicks
+  "horlicks_std": "Standard Horlicks Jar"
+  "horlicks_junior": "Horlicks Junior Jar Stage-2"
+  "horlicks_junior_s1": "Horlicks Junior Jar Stage-1"
+  "horlicks_mother": "Mother Horlicks BIB"
+  "horlicks_choco": "Chocolate Horlicks Jar"
+  "horlicks_women": "Horlicks Women Jar"
+  "horlicks_lite": "Horlicks Lite Jar"
+  "maltova_std": "Maltova BIB"
+  "boost_std": "Boost HFD Standard Jar"
+
+  # Vaseline - Winter Lotions
+  "vaseline_hw": "Vaseline Lotion Healthy Bright 300ml"
+  "vaseline_tm": "Vaseline Lotion Deep Restore 300ml"
+  "vaseline_gluta_rad": "Vaseline Gluta-Hya Dewy Radiance Serum 200ml"
+  "vaseline_gluta_flawless": "Vaseline Gluta-Hya Flawless Glow Serum 200ml"
+  "vaseline_aloe": "Vaseline Aloe 200ml"
+
+  # Oral Care
+  "pepsodent_advanced_salt": "Pepsodent Advanced Salt 140g"
+  "closeup_lemon_salt": "Closeup Lemon & Sea Salt 140g"
+  "pepsodent_germicheck": "Pepsodent Germicheck 140g"
+  "pepsodent_sensitive_expert": "Pepsodent Sensitive Expert 140g"
+
+  # Lux Bodywash
+  "lux_blk_orchd": "Lux Body Wash Black Orchid Scent & Juniper Oil 245ml"
+  "lux_brightening_vitamin": "Lux Body Wash Orange Blossom & Vitamin C 245ml"
+  "lux_freeasia_scnt": "Lux Body Wash Freesia Scent & Aloe Vera 245ml"
+  "lux_french_rose": "Lux Body Wash French Rose & Almond 245ml"
+
+  # Clear Shampoos
+  "clear_csm_small": "Clear Men Shampoo Cool Sport Menthol Anti Dandruff 330ml"
+  "clear_csm_large": "Clear Men Shampoo Cool Sport Menthol Anti Dandruff 450ml"
+  "clear_ahf": "Clear Shampoo Anti Hair Fall 180ml"
+  "clear_cac": "Clear Shampoo Complete Active Care 180ml"
+
+  # Dove Hair Care
+  "dove_cond": "Dove Conditioner Intense Repair 170ml"
+  "dove_hfr_small": "Dove Shampoo Hairfall Rescue 340ml"
+  "dove_hfr_large": "Dove Shampoo Hairfall Rescue 650ml"
+  "dove_irp_small": "Dove Shampoo Intensive Repair 340ml"
+  "dove_irp_large": "Dove Shampoo Intensive Repair 650ml"
+  "dove_no": "Dove Shampoo Nourishing Oil 170ml"
+  "dove_oxg": "Dove Shampoo OXG 170ml"
+  "dove_mask_25": "Dove Deep Repair Treatment Hair Mask 300ml"
+  "dove_nr_lotion": "Dove Nourishing Lotion 200ml"
+
+  # Glow & Lovely
+  "gl_foundation_crm": "Glow & Lovely Face Cream Blemish Balm 40g"
+  "gl_aryuvedic_crm": "Glow & Lovely Ayurvedic Cream 50g"
+  "gl_mltvit_crm": "Glow & Lovely Facial Moisturiser Multi-Vitamin Cream 50g"
+  # Glow & Lovely - size-aware (composite key = class_name:size_variant)
+  "gl_mltvit_crm:50g": "Glow & Lovely Facial Moisturiser Multi-Vitamin Cream 50g"
+  "gl_mltvit_crm:100g": "Glow & Lovely Facial Moisturiser Multi-Vitamin Cream 100g"
+  "gl_insta_glow_fw": "Glow & Lovely Facewash Instaglow with Multivitamins 100g"
+  "gl_sunscrn_crm_30": "Glow & Lovely Sunscreen SPF30 PA++ 50g"
+  "gl_sunscrn_crm_50": "Glow & Lovely Sunscreen SPF50 PA++ 50g"
+
+  # Ponds
+  "ponds_bright_beauty_crm": "Pond's Bright Beauty Serum Cream 35g"
+  "ponds_bright_beauty_fw": "Pond's Face Wash Bright Beauty 100g"
+  "ponds_oil_control_fw": "Pond's Face Wash Oil Control 100g"
+  "ponds_bright_miracle_fw": "Pond's Face Wash Bright Miracle Detox 100g"
+  "ponds_hydra_gel": "Pond's Oil Control Super Light Gel 98g"
+  "ponds_light_moist": "Pond's Oil Control Light Moisturiser 98g"
+
+  # Sunsilk Shampoos
+  "sunsilk_black_small": "Sunsilk Shampoo Stunning Black Shine 375ml"
+  "sunsilk_black_large": "Sunsilk Shampoo Stunning Black Shine 450ml"
+  "sunsilk_tl_small": "Sunsilk Shampoo Lusciously Thick & Long 375ml"
+  "sunsilk_tl_large": "Sunsilk Shampoo Lusciously Thick & Long 450ml"
+  "sunsilk_hfs": "Sunsilk Shampoo Hair Fall Solution 375ml"
+  "sunsilk_hfs_rinse": "Sunsilk Rinse Out Conditioner HFS 180ml"
+  "sunsilk_hrr": "Sunsilk Shampoo Hijab Recharge 180ml"
+  "sunsilk_volume": "Sunsilk Shampoo Volume 375ml"
+  "sunsilk_onion": "Sunsilk Shampoo Onion & Jojoba Oil 375ml"
+  "sunsilk_serum_25": "Sunsilk Super Shine Hair Serum 100ml"
+
+  # Tresemme
+  "tresemme_ks_small": "Tresemme Shampoo Keratin Smooth 340ml"
+  "tresemme_ks_large": "Tresemme Shampoo Keratin Smooth 580ml"
+  "tresemme_ks_white": "Tresemme Conditioner Keratin Smooth 190ml"
+  "tresemme_mask_25": "Tresemme Keratin Smooth Hair Mask 300ml"
+  "tresemme_serum_25": "Tresemme Keratin Smooth Anti-Frizz Hair Serum 100ml"
+  "treseme_sampoo_bond_plex": "Tresemme Shampoo Bondplex Sleek 580ml"
+
+  # Lifebuoy
+  "lifebuoy_pump": "Lifebuoy Handwash Pump 250ml"
+  "lifebuoy_pouch": "Lifebuoy Handwash Refill Pouch 185ml"
+
+  # Surf Excel
+  "surf_excel_matic_500ml": "Surf Excel Matic 500ml"
+  "surf_excel_matic_1l": "Surf Excel Matic 1L"
+
+  # Vim
+  "vim_liquid_500ml": "Vim Liquid 500ml"
+
+# PS Perfect Store Adjacency Rules
+# Priority: PONDS > GAL > HAIRCARE
+# When categories are adjacent, higher priority brand takes 4 legs, lower gets 3
+adjacency_rules:
+  priority_order:
+    - PONDS      # highest priority
+    - GAL
+    - HAIRCARE   # lowest priority
+
+  # Default leg requirements when NOT adjacent
+  default_legs:
+    PONDS: 4
+    GAL: 4
+    HAIRCARE: 4
+
+  # Leg adjustments when adjacent (higher priority keeps 4, lower gets 3)
+  adjacency_adjustments:
+    PONDS_adjacent_to_GAL:
+      PONDS: 4
+      GAL: 3
+    PONDS_adjacent_to_HAIRCARE:
+      PONDS: 4
+      HAIRCARE: 3
+    GAL_adjacent_to_HAIRCARE:
+      GAL: 4
+      HAIRCARE: 3
+    # When PONDS adjacent to both GAL and HAIRCARE (common shelftalker)
+    PONDS_adjacent_to_GAL_and_HAIRCARE:
+      PONDS: 4
+      GAL: 3
+      HAIRCARE: 3
+
+  # Shelftalker waiver: when common leg involved, shelftalker compliance waived
+  common_leg_shelftalker_waiver: true

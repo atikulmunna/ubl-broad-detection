@@ -1,0 +1,90 @@
+# Experimental retail catalog for the labs branch.
+# This file is intentionally metadata-first so new products can often be
+# onboarded by catalog curation instead of detector annotation.
+
+brands:
+  dove:
+    display_name: "Dove"
+    is_ubl: true
+    categories: ["hair_care", "skin_care"]
+    skus:
+      - product_id: "dove-hair-fall-rescue-small"
+        display_name: "Dove Hair Fall Rescue Small"
+        categories: ["hair_care"]
+        pack_type: "bottle"
+        active: true
+      - product_id: "dove-intense-repair-small"
+        display_name: "Dove Intense Repair Small"
+        categories: ["hair_care"]
+        pack_type: "bottle"
+        active: true
+      - product_id: "dove-conditioner"
+        display_name: "Dove Conditioner"
+        categories: ["hair_care"]
+        pack_type: "bottle"
+        active: true
+      - product_id: "dove-natural-radiance-lotion"
+        display_name: "Dove Natural Radiance Lotion"
+        categories: ["skin_care"]
+        pack_type: "bottle"
+        active: true
+  sunsilk:
+    display_name: "Sunsilk"
+    is_ubl: true
+    categories: ["hair_care"]
+    skus:
+      - product_id: "sunsilk-black-shine-small"
+        display_name: "Sunsilk Black Shine Small"
+        categories: ["hair_care"]
+        pack_type: "bottle"
+        active: true
+      - product_id: "sunsilk-thick-long-small"
+        display_name: "Sunsilk Thick & Long Small"
+        categories: ["hair_care"]
+        pack_type: "bottle"
+        active: true
+      - product_id: "sunsilk-onion"
+        display_name: "Sunsilk Onion"
+        categories: ["hair_care"]
+        pack_type: "bottle"
+        active: true
+  ponds:
+    display_name: "Pond's"
+    is_ubl: true
+    categories: ["skin_care"]
+    skus:
+      - product_id: "ponds-bright-beauty-cream"
+        display_name: "Pond's Bright Beauty Cream"
+        categories: ["skin_care"]
+        pack_type: "jar"
+        active: true
+      - product_id: "ponds-bright-beauty-face-wash"
+        display_name: "Pond's Bright Beauty Face Wash"
+        categories: ["skin_care"]
+        pack_type: "tube"
+        active: true
+  colgate:
+    display_name: "Colgate"
+    is_ubl: false
+    categories: ["oral_care"]
+    skus:
+      - product_id: "colgate-unknown"
+        display_name: "Colgate"
+        categories: ["oral_care"]
+        pack_type: "unknown"
+        active: true
+  nivea:
+    display_name: "Nivea"
+    is_ubl: false
+    categories: ["skin_care"]
+    skus:
+      - product_id: "nivea-unknown"
+        display_name: "Nivea"
+        categories: ["skin_care"]
+        pack_type: "unknown"
+        active: true
+  unknown:
+    display_name: "Unknown"
+    is_ubl: false
+    categories: []
+    skus: []

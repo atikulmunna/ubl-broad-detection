@@ -1,0 +1,67 @@
+# Competitor POSM Standards
+# Maps POSM_COMP model class names to display names and companies
+
+item_mappings:
+  bkash_billpay_festoon:
+    name: "bKash Bill Pay Festoon"
+    company: "bKash"
+  bkash_cashout_festoon:
+    name: "bKash Cashout Festoon"
+    company: "bKash"
+  bkash_panel_sticker:
+    name: "bKash Panel Sticker"
+    company: "bKash"
+  bkash_qr_poster:
+    name: "bKash QR Poster"
+    company: "bKash"
+  bkash_sunsed_banner:
+    name: "bKash Sunshade Banner"
+    company: "bKash"
+  fast_wash_poster:
+    name: "Fast Wash Poster"
+    company: "Fast Wash"
+  gp_festoon:
+    name: "Grameenphone Festoon"
+    company: "Grameenphone"
+  gp_sunshad_banner:
+    name: "Grameenphone Sunshade Banner"
+    company: "Grameenphone"
+  lays_chips_rag:
+    name: "Lay's Chips Rag"
+    company: "PepsiCo"
+  lily_soap_poster:
+    name: "Lily Soap Poster"
+    company: "Lily"
+  nagad_cashout_festoon:
+    name: "Nagad Cashout Festoon"
+    company: "Nagad"
+  nagad_sakib_festoon:
+    name: "Nagad Sakib Festoon"
+    company: "Nagad"
+  nagad_sunshade_banner:
+    name: "Nagad Sunshade Banner"
+    company: "Nagad"
+  nagad_tamim_festoon:
+    name: "Nagad Tamim Festoon"
+    company: "Nagad"
+  orix_poster:
+    name: "Orix Poster"
+    company: "Orix"
+  parachute_naturale_poster:
+    name: "Parachute Naturale Poster"
+    company: "Marico"
+  parachute_skin_pure:
+    name: "Parachute Skin Pure"
+    company: "Marico"
+  roket_pannel_sticker:
+    name: "Rocket Panel Sticker"
+    company: "Rocket"
+  ruchi_powder_poster:
+    name: "Ruchi Powder Poster"
+    company: "Ruchi"
+  sunbit_poster:
+    name: "Sunbit Poster"
+    company: "Sunbit"
+  tylox_poster:
+    name: "Tylox Poster"
+    company: "Tylox"

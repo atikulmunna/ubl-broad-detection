@@ -1,0 +1,253 @@
+{
+  "visit_id": "visit_123",
+  "outlet_id": "shop_456",
+  "shop_id": "shop_456",
+  "pjp_mapping_id": null,
+  "visitor_id": null,
+  "execution_date": null,
+  "execution_start_time": null,
+  "execution_end_time": null,
+  "is_executed": true,
+  "is_execution_completed": true,
+  "reason_for_no_execution": null,
+  "is_visitor_challenged": false,
+  "is_supervisor_challenged": false,
+  "visitor_challenge_remarks": "",
+  "supervisor_challenge_remarks": "",
+  "is_location_error": false,
+  "AI_Result": {
+    "category_shelf_display": [
+      {
+        "upload_id": "upl_9b50664b",
+        "s3_key": "raw/123/fixed_shelf/20251223_184601_b40f08c8.jpg",
+        "processing_status": "completed",
+        "processed_at": "2025-12-24T10:30:15.123456+00:00",
+        "display_name": "WINTER LOTION QPDS (WINTER_LOTION_QPDS_OPTION_2)",
+        "outlet_type": "PBS",
+        "slab": "Slab_A",
+        "overall_compliance": "0%",
+        "variant_compliance": "0%",
+        "is_planogram_adherence": "No",
+        "is_exclusivity": "No",
+        "status": "failed",
+        "challenge_remarks": "",
+        "results": {
+          "products": [
+            {
+              "sku_name": "LUX SHW BW BLK ORCHD SCNT&JNPR OIL 245ML",
+              "planned_qty": 6,
+              "visible_qty": 0,
+              "accuracy": "0%"
+            },
+            {
+              "sku_name": "LUX SHW BW FRENCH ROSE&ALMOND OIL 245ML",
+              "planned_qty": 2,
+              "visible_qty": 0,
+              "accuracy": "0%"
+            },
+            {
+              "sku_name": "LUX SHW BW FREEASIA SCNT&ALOE VERA 245ML",
+              "planned_qty": 2,
+              "visible_qty": 0,
+              "accuracy": "0%"
+            },
+            {
+              "sku_name": "LUX SHOWR BW BRIGHTENING VITAMIN C 245ML",
+              "planned_qty": 2,
+              "visible_qty": 0,
+              "accuracy": "0%"
+            }
+          ],
+          "shelf_talker": "No",
+          "shelf_talker_orientation": "No",
+          "total_planned": 12,
+          "total_visible": 0
+        }
+      },
+      {
+        "upload_id": "upl_662e8400",
+        "s3_key": "raw/123/fixed_shelf/662e8400.jpg",
+        "processing_status": "completed",
+        "processed_at": "2025-12-24T10:31:15.123456+00:00",
+        "display_name": "PREMIUM PORTFOLIO QPDS (PREMIUM_PORTFOLIO_QPDS)",
+        "outlet_type": "PBS",
+        "slab": "Slab_B",
+        "overall_compliance": "87.5%",
+        "variant_compliance": "90%",
+        "is_planogram_adherence": "Yes",
+        "is_exclusivity": "Yes",
+        "status": "passed",
+        "challenge_remarks": "",
+        "results": {
+          "products": [
+            {
+              "sku_name": "DOVE MASK",
+              "planned_qty": 2,
+              "visible_qty": 2,
+              "accuracy": "100.0%"
+            },
+            {
+              "sku_name": "TRESEMME MASK",
+              "planned_qty": 2,
+              "visible_qty": 2,
+              "accuracy": "100.0%"
+            },
+            {
+              "sku_name": "TRESEMME SERUM",
+              "planned_qty": 2,
+              "visible_qty": 2,
+              "accuracy": "100.0%"
+            },
+            {
+              "sku_name": "SUNSILK SERUM",
+              "planned_qty": 4,
+              "visible_qty": 3,
+              "accuracy": "75.0%"
+            }
+          ],
+          "shelf_talker": "No",
+          "shelf_talker_orientation": "No",
+          "total_planned": 10,
+          "total_visible": 9
+        }
+      }
+    ],
+    "share_of_shelf": [
+      {
+        "upload_id": "upl_550e8400",
+        "s3_key": "raw/123/share_of_shelf/550e8400.jpg",
+        "processing_status": "completed",
+        "processed_at": "2025-12-24T10:32:15.123456+00:00",
+        "category_name": "Multiple",
+        "ubl_percentage": "100%",
+        "competitor_percentage": "0%",
+        "results": {
+          "brands": [
+            {
+              "company_name": "Unilever Bangladesh Limited",
+              "brand": "VASELINE",
+              "min_qty": "N/A",
+              "visible_qty": 4,
+              "shelving_norm": "N/A"
+            },
+            {
+              "company_name": "Unilever Bangladesh Limited",
+              "brand": "PONDS",
+              "min_qty": "N/A",
+              "visible_qty": 1,
+              "shelving_norm": "N/A"
+            }
+          ]
+        }
+      },
+      {
+        "upload_id": "upl_552e8400",
+        "s3_key": "raw/123/share_of_shelf/552e8400.jpg",
+        "processing_status": "completed",
+        "processed_at": "2025-12-24T10:33:15.123456+00:00",
+        "category_name": "Multiple",
+        "ubl_percentage": "100%",
+        "competitor_percentage": "0%",
+        "results": {
+          "brands": [
+            {
+              "company_name": "Unilever Bangladesh Limited",
+              "brand": "DOVE",
+              "min_qty": "N/A",
+              "visible_qty": 7,
+              "shelving_norm": "N/A"
+            },
+            {
+              "company_name": "Unilever Bangladesh Limited",
+              "brand": "SUNSILK",
+              "min_qty": "N/A",
+              "visible_qty": 3,
+              "shelving_norm": "N/A"
+            }
+          ]
+        }
+      }
+    ],
+    "share_of_sachet": [
+      {
+        "upload_id": "upl_770e8400",
+        "s3_key": "raw/123/sachet/770e8400.jpg",
+        "processing_status": "completed",
+        "processed_at": "2025-12-24T10:34:15.123456+00:00",
+        "combined_sachet_hanger": "No",
+        "brand_exclusive_hanger": "Yes",
+        "results": {
+          "sachets": [
+            {
+              "company_name": "Unilever Bangladesh Limited",
+              "sachet_name": "HORLICKS AHFD STD CTSL 18ML",
+              "visible_qty": 4,
+              "orientation_adherence": "Yes",
+              "slot_adherence": "N/A"
+            },
+            {
+              "company_name": "Unilever Bangladesh Limited",
+              "sachet_name": "DOVE SHAMPOO IRP 6ML",
+              "visible_qty": 10,
+              "orientation_adherence": "Yes",
+              "slot_adherence": "N/A"
+            },
+            {
+              "company_name": "Unilever Bangladesh Limited",
+              "sachet_name": "DOVE SHAMPOO HAIR FALL RESCUE 6ML",
+              "visible_qty": 10,
+              "orientation_adherence": "Yes",
+              "slot_adherence": "N/A"
+            }
+          ]
+        }
+      }
+    ],
+    "share_of_posm": [
+      {
+        "upload_id": "upl_880e8400",
+        "s3_key": "raw/123/posm/880e8400.jpg",
+        "processing_status": "completed",
+        "processed_at": "2025-12-24T10:35:15.123456+00:00",
+        "ubl_posm_accuracy": "100%",
+        "results": {
+          "posm_items": [
+            {
+              "company": "Unilever Bangladesh Limited",
+              "material_name": "DOVE CONDITIONER SACHET HANGER DEC'25",
+              "input_qty": 1,
+              "visible_qty": 1,
+              "accuracy": "100%"
+            }
+          ]
+        }
+      },
+      {
+        "upload_id": "upl_881e8400",
+        "s3_key": "raw/123/posm/881e8400.jpg",
+        "processing_status": "completed",
+        "processed_at": "2025-12-24T10:36:15.123456+00:00",
+        "ubl_posm_accuracy": "100%",
+        "results": {
+          "posm_items": [
+            {
+              "company": "Unilever Bangladesh Limited",
+              "material_name": "SUNSILK SHAMPOO DISPLAY STAND",
+              "input_qty": 1,
+              "visible_qty": 1,
+              "accuracy": "100%"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "outlet_status_for_display": "Failed",
+  "request_for_challenge": true,
+  "challenged_by_supervisor": false,
+  "changed_after_audit": false,
+  "execution_done": true,
+  "reason_for_error": null,
+  "aggregated_at": "2025-12-24T10:36:20.123456+00:00",
+  "total_images_processed": 8
+}

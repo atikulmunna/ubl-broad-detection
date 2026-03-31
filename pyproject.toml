@@ -1,0 +1,5 @@
+[project]
+name = "ubl-ai-backend"
+version = "0.9.0"
+description = "UBL AI inference server — SQS-driven YOLO pipeline"
+requires-python = ">=3.10"

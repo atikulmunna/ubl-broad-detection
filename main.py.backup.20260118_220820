@@ -1,0 +1,1548 @@
+"""
+UBL AI Server with SQS Integration
+
+Integrated multi-stream YOLO inference engine with AWS SQS architecture.
+Processes images from S3, runs AI models, and sends results back via SQS.
+
+Features:
+- Multiple concurrent CUDA streams for high GPU utilization
+- YOLO model inference (DA, QPDS, Shelftalker, Sachet, POSM, Exclusivity)
+- Compliance calculations (Fixed Shelf, Share of Shelf, Sachet, POSM)
+- S3 image processing with metadata
+- SQS message handling
+"""
+
+import os
+import sys
+import json
+import asyncio
+import tempfile
+import threading
+import logging
+from typing import Dict, Optional, Any
+from collections import defaultdict
+from io import BytesIO
+from urllib.parse import unquote_plus
+
+import boto3
+import yaml
+import numpy as np
+from PIL import Image
+import torch
+from ultralytics import YOLO
+from dotenv import load_dotenv
+
+# Import brand/category utilities for SOS classification
+from utils.brand_mapper import extract_brand_from_product
+from utils.sos_category_mapping import get_sos_category
+from utils.logger import setup_cloudwatch_logging
+
+# Configure CloudWatch-compatible JSON logging
+setup_cloudwatch_logging()
+logger = logging.getLogger(__name__)
+
+# Load environment variables from .env file
+load_dotenv()
+
+# ============================================================================
+# Configuration
+# ============================================================================
+
+# S3 Bucket Configuration
+S3_BUCKET_PREFIX = "u-lens-production"
+
+# AWS Configuration
+USE_LOCALSTACK = os.getenv("USE_LOCALSTACK", "false").lower() == "true"
+AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL", "http://localhost:4566")
+AWS_REGION = os.getenv("AWS_DEFAULT_REGION", "ap-southeast-1")
+
+# S3 Buckets (only those needed for AI service)
+S3_BUCKET = os.getenv("S3_BUCKET", f"{S3_BUCKET_PREFIX}-audit-images")
+S3_MODELS_BUCKET = os.getenv("S3_MODELS_BUCKET", f"{S3_BUCKET_PREFIX}-ai-models")
+S3_RESULTS_BUCKET = os.getenv("S3_RESULTS_BUCKET", f"{S3_BUCKET_PREFIX}-ai-results")
+
+# SQS Queues
+SQS_IMAGE_QUEUE_URL = os.getenv("SQS_IMAGE_QUEUE_URL")
+SQS_RESULTS_QUEUE_URL = os.getenv("SQS_RESULTS_QUEUE_URL")
+
+# Multi-stream configuration
+NUM_INFERENCE_WORKERS = int(os.getenv('NUM_INFERENCE_WORKERS', '4'))
+SQS_POLL_INTERVAL = float(os.getenv('SQS_POLL_INTERVAL', '0.1'))
+SQS_EMPTY_WAIT = float(os.getenv('SQS_EMPTY_WAIT', '1.0'))
+
+
+# AWS Clients - Production uses IAM Role, LocalStack uses test credentials
+if USE_LOCALSTACK:
+    logger.info("Running in LocalStack mode")
+    s3_client = boto3.client(
+        's3',
+        endpoint_url=AWS_ENDPOINT_URL,
+        region_name=AWS_REGION,
+        aws_access_key_id='test',
+        aws_secret_access_key='test'
+    )
+    sqs_client = boto3.client(
+        'sqs',
+        endpoint_url=AWS_ENDPOINT_URL,
+        region_name=AWS_REGION,
+        aws_access_key_id='test',
+        aws_secret_access_key='test'
+    )
+else:
+    logger.info("Running in Production mode (using IAM Role)")
+    s3_client = boto3.client('s3', region_name=AWS_REGION)
+    sqs_client = boto3.client('sqs', region_name=AWS_REGION)
+    
+def load_config(config_path: str = "config/config.yaml") -> Dict:
+    """Load configuration from YAML file"""
+    try:
+        with open(config_path, 'r') as f:
+            return yaml.safe_load(f)
+    except Exception as e:
+        logger.warning(f"Could not load config: {e}")
+        return {}
+
+
+CONFIG = load_config()
+
+# Model paths
+MODEL_DIR = "models"
+MODELS_CONFIG = CONFIG.get('models', {})
+
+MODEL_PATHS = {
+    'exclusivity': MODELS_CONFIG.get('exclusivity', os.path.join(MODEL_DIR, "EXCLUSIVITY.pt")),
+    'ubl': MODELS_CONFIG.get('ubl', os.path.join(MODEL_DIR, "DA_YOLO11X.pt")),
+    'qpds': MODELS_CONFIG.get('qpds', os.path.join(MODEL_DIR, "QPDS.pt")),
+    'shelftalker': MODELS_CONFIG.get('shelftalker', os.path.join(MODEL_DIR, "Shelftalker.pt")),
+    'sachet': MODELS_CONFIG.get('sachet', os.path.join(MODEL_DIR, "SACHET_YOLO11X.pt")),
+    'posm': MODELS_CONFIG.get('posm', os.path.join(MODEL_DIR, "POSM_YOLO11X.pt")),
+}
+
+# Analysis configs
+SHARE_OF_SHELF_CONFIG = CONFIG.get('share_of_shelf', {})
+FIXED_SHELF_CONFIG = CONFIG.get('fixed_shelf', {})
+SACHET_CONFIG = CONFIG.get('sachet', {})
+POSM_CONFIG = CONFIG.get('posm', {})
+
+# Load SOS brand norms for UBL/Competitor classification
+def _load_brand_norms_main():
+    """Load SOS brand norms including is_ubl field for classification"""
+    try:
+        norm_path = os.path.join(os.path.dirname(__file__), "config", "standards", "sos_brand_shelving_norm.yaml")
+        with open(norm_path) as f:
+            data = yaml.safe_load(f)
+            norms = {}
+            for item in data.get('brands', []):
+                key = (item['brand'], item['category'])
+                norms[key] = {
+                    'min_qty': item.get('min_qty'),
+                    'is_ubl': item.get('is_ubl')
+                }
+            logger.info(f"Loaded {len(norms)} brand norms for SOS classification")
+            return norms
+    except Exception as e:
+        logger.warning(f"Could not load brand norms: {e}")
+        return {}
+
+BRAND_NORMS = _load_brand_norms_main()  # Cache at startup
+
+
+# ============================================================================
+# Import Compliance Calculators and Utilities
+# ============================================================================
+
+# Add current directory and /app to path for both local and Docker environments
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+if '/app' not in sys.path:
+    sys.path.insert(0, '/app')
+
+try:
+    from utils.category_analysis import CATEGORY_MAPPING
+except ImportError:
+    CATEGORY_MAPPING = {}
+
+try:
+    from utils.size_variant_detector import assign_size_variants_simple, get_size_summary
+    SIZE_VARIANT_AVAILABLE = True
+except ImportError:
+    SIZE_VARIANT_AVAILABLE = False
+    assign_size_variants_simple = None
+    get_size_summary = None
+    logger.warning("Size variant detector not available")
+
+try:
+    from utils.qpds_compliance import calculate_compliance, check_planogram_adherence, check_shelftalker_adherence
+    QPDS_AVAILABLE = True
+except ImportError:
+    QPDS_AVAILABLE = False
+    calculate_compliance = None
+    check_planogram_adherence = None
+    check_shelftalker_adherence = None
+    logger.warning("QPDS compliance not available")
+
+try:
+    from utils.sos_compliance import calculate_sos_compliance
+    SOS_AVAILABLE = True
+except ImportError:
+    SOS_AVAILABLE = False
+    calculate_sos_compliance = None
+    logger.warning("SOS compliance not available")
+
+try:
+    from utils.sachet_compliance import calculate_sachet_compliance
+    SACHET_AVAILABLE = True
+except ImportError:
+    SACHET_AVAILABLE = False
+    calculate_sachet_compliance = None
+    logger.warning("Sachet compliance not available")
+
+try:
+    from utils.posm_compliance import calculate_posm_compliance
+    POSM_AVAILABLE = True
+except ImportError:
+    POSM_AVAILABLE = False
+    calculate_posm_compliance = None
+    logger.warning("POSM compliance not available")
+
+
+# ============================================================================
+# Shared Model Manager (Memory Efficient)
+# ============================================================================
+
+class MultiStreamModelManager:
+    """
+    Manages shared YOLO models across multiple workers with persistent CUDA streams.
+    All workers share the same model instances to save memory.
+
+    Features:
+    - Shared models across workers (memory efficient)
+    - Per-worker persistent CUDA streams for parallelism
+    - Lock-free inference for maximum GPU utilization
+    """
+
+    def __init__(self, num_workers: int = NUM_INFERENCE_WORKERS):
+        self.num_workers = num_workers
+        self.models = {}
+        
+        # Device detection: MPS (Apple Silicon) > CUDA (NVIDIA) > CPU
+        
+        if torch.cuda.is_available():
+            self.device = "cuda"
+        elif torch.backends.mps.is_available():
+            self.device = "mps"
+        else:
+            self.device = "cpu"
+
+        # Per-worker CUDA streams (persistent for better performance, CUDA only)
+        self.worker_streams: Dict[int, Any] = {}
+
+        # Only use locks for model loading, not for inference
+        # YOLO predict() is thread-safe for read-only operations
+        self._loading_lock = threading.Lock()
+
+        logger.info(f"Initializing MultiStreamModelManager on {self.device}")
+        logger.info(f"Workers: {num_workers}")
+
+        self._load_models()
+        self._create_worker_streams()
+
+    def _load_models(self):
+        """Load all models once and share across workers"""
+        # Only lock during loading, not inference
+        with self._loading_lock:
+            for model_name, model_path in MODEL_PATHS.items():
+                try:
+                    if os.path.exists(model_path):
+                        logger.info(f"Loading {model_name} model from {model_path}")
+                        model = YOLO(model_path)
+                        model.to(self.device)
+                        self.models[model_name] = model
+                        logger.info(f"Loaded {model_name} model successfully")
+                    else:
+                        logger.warning(f"Model file not found: {model_path}")
+                except Exception as e:
+                    logger.error(f"Error loading {model_name} model: {e}")
+
+    def _create_worker_streams(self):
+        """Create persistent CUDA streams for each worker"""
+        if self.device == "cuda":
+            logger.info(f"Creating {self.num_workers} persistent CUDA streams")
+            for worker_id in range(self.num_workers):
+                self.worker_streams[worker_id] = torch.cuda.Stream()
+                logger.debug(f"Worker {worker_id}: Stream created")
+        else:
+            logger.info("CPU mode - no CUDA streams needed")
+
+    def get_model(self, model_name: str) -> Optional[YOLO]:
+        """Get a shared model instance"""
+        return self.models.get(model_name)
+
+    def predict(self, model_name: str, source, worker_id: int = 0, **kwargs):
+        """
+        Run prediction with a specific worker's CUDA stream.
+        Lock-free for maximum parallelism - YOLO predict() is thread-safe.
+
+        Args:
+            model_name: Name of the model to use
+            source: Image source (path, PIL, numpy array)
+            worker_id: Worker ID for CUDA stream selection (0 to num_workers-1)
+            **kwargs: Additional arguments for model.predict()
+
+        Returns:
+            Model prediction results
+        """
+        model = self.get_model(model_name)
+        if model is None:
+            raise ValueError(f"Model {model_name} not loaded")
+
+        # NO LOCKS - YOLO predict() is thread-safe for inference
+        # Each worker uses its own CUDA stream for true parallelism
+        # This allows multiple workers to use the same model simultaneously
+        
+        if self.device == "cuda" and worker_id in self.worker_streams:
+            # Use worker's persistent CUDA stream for parallelism (CUDA only)
+            with torch.cuda.stream(self.worker_streams[worker_id]):
+                results = model.predict(source, **kwargs)
+        else:
+            # MPS/CPU: run directly without streams
+            results = model.predict(source, **kwargs)
+
+        return results
+
+
+# Global model manager
+model_manager = MultiStreamModelManager()
+
+
+# ============================================================================
+# Utility Functions
+# ============================================================================
+
+def calculate_iou(box1, box2) -> float:
+    """Calculate Intersection over Union for two bounding boxes"""
+    x1_min, y1_min, x1_max, y1_max = box1
+    x2_min, y2_min, x2_max, y2_max = box2
+
+    inter_x_min = max(x1_min, x2_min)
+    inter_y_min = max(y1_min, y2_min)
+    inter_x_max = min(x1_max, x2_max)
+    inter_y_max = min(y1_max, y2_max)
+    
+    inter_area = max(0, inter_x_max - inter_x_min) * max(0, inter_y_max - inter_y_min)
+    box1_area = (x1_max - x1_min) * (y1_max - y1_min)
+    box2_area = (x2_max - x2_min) * (y2_max - y2_min)
+    union_area = box1_area + box2_area - inter_area
+
+    return inter_area / union_area if union_area > 0 else 0
+
+
+# ============================================================================
+# Fixed Shelf Helper Functions (FULL IMPLEMENTATION)
+# ============================================================================
+
+def _get_expected_shelftalker_prefix(shelf_type: str) -> Optional[str]:
+    """Get the expected shelftalker class prefix for a given shelf type."""
+    if not shelf_type:
+        return None
+
+    try:
+        yaml_path = "config/standards/qpds_standards.yaml"
+        if not os.path.exists(yaml_path):
+            logger.warning(f"QPDS standards file not found: {yaml_path}")
+            return None
+
+        with open(yaml_path, 'r') as f:
+            standards = yaml.safe_load(f)
+            mapping = standards.get('shelftalker_to_shelf_mapping', {})
+
+        return mapping.get(shelf_type)
+    except Exception as e:
+        logger.error(f"Error loading shelftalker prefix for '{shelf_type}': {e}")
+        return None
+
+
+def _detect_shelftalker_roi(worker_id: int, pil_image: Image.Image, st_conf: float, expand_margin: float,
+                            shelf_type: str = None):
+    """Detect shelftalkers and create combined ROI."""
+    temp_file = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+    temp_path = temp_file.name
+    temp_file.close()
+    pil_image.save(temp_path, quality=95)
+    
+    try:
+        st_results = model_manager.predict('shelftalker', temp_path, worker_id=worker_id, conf=st_conf, verbose=False)
+        st_result = st_results[0] if st_results else None
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+    
+    if not st_result or not st_result.boxes:
+        return None, []
+    
+    st_boxes = st_result.boxes.xyxy.cpu().numpy()
+    st_scores = st_result.boxes.conf.cpu().numpy()
+    st_classes = st_result.boxes.cls.cpu().numpy().astype(int)
+    
+    if len(st_boxes) == 0:
+        return None, []
+    
+    shelftalker_model = model_manager.get_model('shelftalker')
+    expected_prefix = _get_expected_shelftalker_prefix(shelf_type) if shelf_type else None
+    
+    individual_shelftalkers = []
+    filtered_boxes = []
+    all_detected = []
+    
+    for idx, (box, score, cls_id) in enumerate(zip(st_boxes, st_scores, st_classes)):
+        class_name = shelftalker_model.names.get(int(cls_id), str(cls_id)) if shelftalker_model else str(cls_id)
+        
+        shelftalker_info = {
+            'position': f"shelftalker_{idx}",
+            'class_name': class_name,
+            'confidence': float(score)
+        }
+        all_detected.append(shelftalker_info)
+        
+        if expected_prefix:
+            if class_name.startswith(expected_prefix):
+                individual_shelftalkers.append(shelftalker_info)
+                filtered_boxes.append(box)
+        else:
+            individual_shelftalkers.append(shelftalker_info)
+            filtered_boxes.append(box)
+    
+    if expected_prefix and len(filtered_boxes) == 0:
+        if len(all_detected) > 0:
+            detected_types = set([st['class_name'].split('_st_')[0] for st in all_detected if '_st_' in st['class_name']])
+            logger.warning(f"shelf_type='{shelf_type}' expects '{expected_prefix}' but detected: {detected_types}")
+        return None, []
+    
+    if len(filtered_boxes) == 0:
+        return None, []
+    
+    filtered_boxes = np.array(filtered_boxes)
+    
+    x1_min = np.min(filtered_boxes[:, 0])
+    y1_min = np.min(filtered_boxes[:, 1])
+    x2_max = np.max(filtered_boxes[:, 2])
+    y2_max = np.max(filtered_boxes[:, 3])
+    
+    width = x2_max - x1_min
+    height = y2_max - y1_min
+    
+    inward_margin = expand_margin * 0.5
+    
+    x1_min = max(0, x1_min + width * inward_margin)
+    y1_min = max(0, y1_min + height * inward_margin)
+    x2_max = min(pil_image.width, x2_max - width * inward_margin)
+    y2_max = min(pil_image.height, y2_max - height * inward_margin)
+    
+    combined_roi = [float(x1_min), float(y1_min), float(x2_max), float(y2_max)]
+    
+    return combined_roi, individual_shelftalkers
+
+
+def _detect_products_in_roi(worker_id: int, pil_image: Image.Image, roi_box: list,
+                            ubl_conf: float, selected_category: str):
+    """Detect products within ROI (crop then detect)."""
+    x1, y1, x2, y2 = roi_box
+    roi_image = pil_image.crop((x1, y1, x2, y2))
+    
+    temp_file = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+    temp_path = temp_file.name
+    temp_file.close()
+    roi_image.save(temp_path, quality=95)
+    
+    try:
+        qpds_results = model_manager.predict('qpds', temp_path, worker_id=worker_id, conf=ubl_conf, verbose=False)
+        qpds_result = qpds_results[0] if qpds_results else None
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+    
+    if not qpds_result or not qpds_result.boxes:
+        return []
+    
+    boxes = qpds_result.boxes.xyxy.cpu().numpy()
+    scores = qpds_result.boxes.conf.cpu().numpy()
+    class_ids = qpds_result.boxes.cls.cpu().numpy().astype(int)
+    
+    qpds_model = model_manager.get_model('qpds')
+    
+    detections = []
+    for box, score, class_id in zip(boxes, scores, class_ids):
+        class_name = qpds_model.names.get(int(class_id), str(class_id)) if qpds_model else str(class_id)
+        category = CATEGORY_MAPPING.get(class_name, 'unknown')
+        
+        if class_name.startswith('da_') and '_st_' in class_name:
+            continue
+        
+        if selected_category != "all" and category != selected_category:
+            continue
+        
+        x1_global = float(box[0] + x1)
+        y1_global = float(box[1] + y1)
+        x2_global = float(box[2] + x1)
+        y2_global = float(box[3] + y1)
+        
+        detections.append({
+            'bbox_xyxy': [x1_global, y1_global, x2_global, y2_global],
+            'class_name': class_name,
+            'category': category,
+            'confidence': float(score)
+        })
+    
+    return detections
+
+
+def _detect_products_full_image(worker_id: int, pil_image: Image.Image, ubl_conf: float,
+                               selected_category: str):
+    """Detect products on full image without ROI restriction."""
+    temp_file = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+    temp_path = temp_file.name
+    temp_file.close()
+    pil_image.save(temp_path, quality=95)
+    
+    try:
+        qpds_results = model_manager.predict('qpds', temp_path, worker_id=worker_id, conf=ubl_conf, verbose=False)
+        qpds_result = qpds_results[0] if qpds_results else None
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+    
+    if not qpds_result or not qpds_result.boxes:
+        return []
+    
+    boxes = qpds_result.boxes.xyxy.cpu().numpy()
+    scores = qpds_result.boxes.conf.cpu().numpy()
+    class_ids = qpds_result.boxes.cls.cpu().numpy().astype(int)
+    
+    qpds_model = model_manager.get_model('qpds')
+    
+    detections = []
+    for box, score, class_id in zip(boxes, scores, class_ids):
+        class_name = qpds_model.names.get(int(class_id), str(class_id)) if qpds_model else str(class_id)
+        category = CATEGORY_MAPPING.get(class_name, 'unknown')
+        
+        if class_name.startswith('da_') and '_st_' in class_name:
+            continue
+        
+        if selected_category != "all" and category != selected_category:
+            continue
+        
+        detections.append({
+            'bbox_xyxy': [float(box[0]), float(box[1]), float(box[2]), float(box[3])],
+            'class_name': class_name,
+            'category': category,
+            'confidence': float(score)
+        })
+    
+    return detections
+
+
+def _validate_roi_quality(shelftalkers: list, roi_box: list, image_width: int, image_height: int,
+                         shelf_type: str = None) -> Dict:
+    """Validate ROI quality based on shelftalker detection."""
+    quality_info = {
+        'quality_score': 0.0,
+        'detected_count': len(shelftalkers),
+        'expected_count': 4,
+        'completeness_ratio': 0.0,
+        'roi_area_ratio': 0.0,
+        'use_roi': False,
+        'reason': ''
+    }
+    
+    if not shelftalkers or roi_box is None:
+        quality_info['reason'] = 'No shelftalkers detected'
+        return quality_info
+    
+    roi_width = roi_box[2] - roi_box[0]
+    roi_height = roi_box[3] - roi_box[1]
+    roi_area = roi_width * roi_height
+    image_area = image_width * image_height
+    roi_area_ratio = roi_area / image_area if image_area > 0 else 0
+    quality_info['roi_area_ratio'] = roi_area_ratio
+    
+    expected_count = 4
+    if QPDS_AVAILABLE and shelf_type:
+        try:
+            yaml_path = "config/standards/qpds_standards.yaml"
+            if os.path.exists(yaml_path):
+                with open(yaml_path, 'r') as f:
+                    standards = yaml.safe_load(f)
+                    expected_shelftalkers = standards.get('expected_shelftalkers', {})
+                    expected_count = expected_shelftalkers.get(shelf_type, 4)
+        except Exception as e:
+            logger.warning(f"Could not load expected shelftalker count for '{shelf_type}': {e}, using default: 4")
+    
+    quality_info['expected_count'] = expected_count
+    detected_count = len(shelftalkers)
+    completeness_ratio = detected_count / expected_count if expected_count > 0 else 0
+    quality_info['completeness_ratio'] = completeness_ratio
+    
+    min_roi_area_ratio = FIXED_SHELF_CONFIG.get('min_roi_area_ratio', 0.08)
+    min_completeness = FIXED_SHELF_CONFIG.get('min_shelftalker_completeness', 0.75)
+    
+    if completeness_ratio >= min_completeness and roi_area_ratio >= min_roi_area_ratio:
+        quality_info['use_roi'] = True
+        quality_info['quality_score'] = completeness_ratio * roi_area_ratio
+        quality_info['reason'] = f'High quality: {detected_count}/{expected_count} shelftalkers detected'
+    elif detected_count >= 4 and roi_area_ratio >= min_roi_area_ratio:
+        quality_info['use_roi'] = True
+        quality_info['quality_score'] = 0.8
+        quality_info['reason'] = f'Good quality: {detected_count} shelftalkers detected'
+    else:
+        quality_info['use_roi'] = False
+        quality_info['quality_score'] = completeness_ratio * roi_area_ratio * 0.5
+        if detected_count < expected_count:
+            quality_info['reason'] = f'Incomplete: only {detected_count}/{expected_count} shelftalkers detected'
+        elif roi_area_ratio < min_roi_area_ratio:
+            quality_info['reason'] = f'ROI too small: {roi_area_ratio*100:.1f}% of image'
+        else:
+            quality_info['reason'] = 'Low confidence in ROI quality'
+    
+    return quality_info
+
+
+def _check_exclusivity(worker_id: int, pil_image: Image.Image, roi_box: Optional[list], conf: float) -> Dict:
+    """Check if shelf has exclusivity (no non-UBL products detected)."""
+    if roi_box is not None:
+        x1, y1, x2, y2 = roi_box
+        check_image = pil_image.crop((x1, y1, x2, y2))
+    else:
+        check_image = pil_image
+    
+    temp_file = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+    temp_path = temp_file.name
+    temp_file.close()
+    check_image.save(temp_path, quality=95)
+    
+    try:
+        exclusivity_results = model_manager.predict('exclusivity', temp_path, worker_id=worker_id, conf=conf, verbose=False)
+        exclusivity_result = exclusivity_results[0] if exclusivity_results else None
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+    
+    if not exclusivity_result or not exclusivity_result.boxes:
+        return {
+            "is_exclusive": True,
+            "non_ubl_count": 0,
+            "non_ubl_products": {}
+        }
+    
+    boxes = exclusivity_result.boxes.xyxy.cpu().numpy()
+    class_ids = exclusivity_result.boxes.cls.cpu().numpy().astype(int)
+    
+    exclusivity_model = model_manager.get_model('exclusivity')
+    
+    non_ubl_breakdown = defaultdict(int)
+    for class_id in class_ids:
+        class_name = exclusivity_model.names.get(int(class_id), str(class_id)) if exclusivity_model else str(class_id)
+        non_ubl_breakdown[class_name] += 1
+    
+    non_ubl_count = len(boxes)
+    is_exclusive = non_ubl_count == 0
+    
+    return {
+        "is_exclusive": is_exclusive,
+        "non_ubl_count": non_ubl_count,
+        "non_ubl_products": dict(non_ubl_breakdown)
+    }
+
+
+# ============================================================================
+# Analysis Functions
+# ============================================================================
+
+async def analyze_share_of_shelf(image_data: bytes, worker_id: int = 0) -> dict:
+    """Analyze Share of Shelf using is_ubl config-based classification"""
+    logger.info(f"[Worker {worker_id}] [SOS] Starting Share of Shelf analysis")
+    try:
+        # Load image
+        pil_image = Image.open(BytesIO(image_data)).convert("RGB")
+        img_width, img_height = pil_image.size
+        logger.info(f"[Worker {worker_id}] [SOS] Image dimensions: {img_width}x{img_height}")
+        logger.debug(f"[Worker {worker_id}] [SOS] Image size: {len(image_data)} bytes")
+
+        # Run detection for all products (UBL + Competitor) - DA_YOLO11X now has 243 classes
+        sos_conf = SHARE_OF_SHELF_CONFIG.get('conf', SHARE_OF_SHELF_CONFIG.get('ubl_conf', 0.20))
+        logger.debug(f"[Worker {worker_id}] [SOS] Running detection with conf={sos_conf}")
+        results = model_manager.predict(
+            'ubl',
+            source=pil_image,
+            worker_id=worker_id,
+            conf=sos_conf,
+            verbose=False
+        )
+
+        # Classify detections as UBL or Competitor using is_ubl config field
+        ubl_products = defaultdict(int)
+        competitor_products = defaultdict(int)
+        model_result = results[0] if results else None
+        
+        # Diagnostic logging for model results
+        if not model_result:
+            logger.warning(f"[Worker {worker_id}] [SOS] ⚠ Model returned no results object")
+        elif not model_result.boxes:
+            logger.warning(f"[Worker {worker_id}] [SOS] ⚠ Model returned results but no boxes detected (conf={sos_conf})")
+        else:
+            raw_detection_count = len(model_result.boxes)
+            logger.info(f"[Worker {worker_id}] [SOS] Model detected {raw_detection_count} boxes with conf>={sos_conf}")
+
+        if model_result and model_result.boxes:
+            for box in model_result.boxes:
+                cls_id = int(box.cls[0])
+                class_name = model_result.names[cls_id]
+
+                # Look up brand and category
+                brand = extract_brand_from_product(class_name)
+                category = get_sos_category(class_name) or "unknown"
+
+                # Check is_ubl field in config
+                norm_key = (brand, category)
+                brand_entry = BRAND_NORMS.get(norm_key)
+
+                if brand_entry and brand_entry.get('is_ubl') == 'yes':
+                    ubl_products[class_name] += 1
+                else:
+                    competitor_products[class_name] += 1
+            
+            logger.debug(f"[Worker {worker_id}] [SOS] UBL products: {dict(ubl_products)}")
+            logger.debug(f"[Worker {worker_id}] [SOS] Competitor products: {dict(competitor_products)}")
+
+        # Calculate totals
+        ubl_count = sum(ubl_products.values())
+        competitor_count = sum(competitor_products.values())
+        logger.info(f"[Worker {worker_id}] [SOS] ✓ Analysis complete: {ubl_count} UBL + {competitor_count} competitor products")
+
+        # Calculate compliance (only for UBL products)
+        compliance_score = 0.0
+        product_accuracy = []
+
+        if SOS_AVAILABLE and calculate_sos_compliance:
+            compliance_score, product_accuracy = calculate_sos_compliance(dict(ubl_products))
+
+        # Group ALL products (UBL + Competitor) by category
+        category_breakdown = defaultdict(lambda: defaultdict(int))
+        for class_name, count in ubl_products.items():
+            cat = get_sos_category(class_name) or "unknown"
+            category_breakdown[cat][class_name] = count
+        for class_name, count in competitor_products.items():
+            cat = get_sos_category(class_name) or "unknown"
+            category_breakdown[cat][class_name] = count
+
+        return {
+            "model_version": "DA_YOLO11X (243 classes - UBL + Competitor)",
+            "confidence": sos_conf,
+            "total_products": ubl_count + competitor_count,
+            "unique_products": len(ubl_products) + len(competitor_products),
+            "ubl_product_breakdown": dict(ubl_products),
+            "competitor_product_breakdown": dict(competitor_products),
+            "category_breakdown": {k: dict(v) for k, v in category_breakdown.items()},
+            "competitor_count": competitor_count,
+            "compliance_score": compliance_score,
+            "product_accuracy": product_accuracy,
+            "summary": f"Detected {ubl_count} UBL + {competitor_count} competitor products"
+        }
+
+    except Exception as e:
+        logger.error(f"Error in analyze_share_of_shelf: {e}", exc_info=True)
+        return {
+            "error": str(e),
+            "summary": "Error processing Share of Shelf"
+        }
+
+
+async def analyze_fixed_shelf(image_data: bytes, worker_id: int = 0, shelf_type: str = None, selected_category: str = "all") -> dict:
+    """Analyze Fixed Shelf (QPDS) - FULL IMPLEMENTATION with all features"""
+    logger.info(f"[Worker {worker_id}] [QPDS] Starting Fixed Shelf analysis (shelf_type={shelf_type}, category={selected_category})")
+    try:
+        pil_image = Image.open(BytesIO(image_data)).convert("RGB")
+        image = np.array(pil_image)
+        img_height, img_width = image.shape[:2]
+        logger.info(f"[Worker {worker_id}] [QPDS] Image dimensions: {img_width}x{img_height}")
+        logger.debug(f"[Worker {worker_id}] [QPDS] Image size: {len(image_data)} bytes")
+
+        # Get config
+        st_conf = FIXED_SHELF_CONFIG.get('shelftalker_conf', 0.15)
+        ubl_conf = FIXED_SHELF_CONFIG.get('ubl_conf', 0.25)
+        exclusivity_conf = FIXED_SHELF_CONFIG.get('exclusivity_conf', 0.35)
+        expand_margin = FIXED_SHELF_CONFIG.get('expand_margin', 0.05)
+        logger.debug(f"[Worker {worker_id}] [QPDS] Config: st_conf={st_conf}, ubl_conf={ubl_conf}, exclusivity_conf={exclusivity_conf}")
+
+        # Step 1: Detect shelftalkers and create combined ROI
+        combined_roi, shelftalkers = _detect_shelftalker_roi(worker_id, pil_image, st_conf, expand_margin, shelf_type)
+        logger.info(f"[QPDS] Shelftalkers detected: {len(shelftalkers)}")
+        if shelftalkers:
+            for st in shelftalkers:
+                logger.info(f"  - {st['position']}: {st['class_name']} (conf: {st['confidence']:.2f})")
+
+        # Step 2: Validate ROI quality
+        roi_quality = _validate_roi_quality(shelftalkers, combined_roi, img_width, img_height, shelf_type)
+        logger.info(f"[QPDS] ROI Quality: use_roi={roi_quality['use_roi']}, reason='{roi_quality['reason']}'")
+        logger.info(f"[QPDS] ROI Details: detected={roi_quality['detected_count']}/{roi_quality['expected_count']}, area_ratio={roi_quality['roi_area_ratio']:.2%}")
+
+        # Preserve the original ROI for exclusivity check
+        exclusivity_roi = combined_roi
+        detections = []
+        method = "full_image"
+
+        # Step 3: Decide whether to use ROI or full image
+        if roi_quality['use_roi']:
+            logger.info(f"[Worker {worker_id}] [QPDS] Using ROI-based detection: {roi_quality['reason']}")
+            detections = _detect_products_in_roi(worker_id, pil_image, combined_roi, ubl_conf, selected_category)
+            method = f"roi ({roi_quality['reason']})"
+        else:
+            logger.warning(f"[Worker {worker_id}] [QPDS] Using full-image detection: {roi_quality['reason']}")
+            detections = _detect_products_full_image(worker_id, pil_image, ubl_conf, selected_category)
+            method = f"full_image ({roi_quality['reason']})"
+
+        logger.info(f"[Worker {worker_id}] [QPDS] Product detection complete: {len(detections)} products found")
+        if len(detections) == 0:
+            logger.warning(f"[Worker {worker_id}] [QPDS] ⚠ NO PRODUCTS DETECTED (conf={ubl_conf}, method={method})")
+        # Step 4: Check exclusivity
+        # Check exclusivity on ROI if quality is sufficient, otherwise check full image
+        if exclusivity_roi is not None and roi_quality['use_roi']:
+            exclusivity_data = _check_exclusivity(worker_id, pil_image, exclusivity_roi, exclusivity_conf)
+        else:
+            # When ROI quality is poor or no shelftalkers detected, check full image
+            exclusivity_data = _check_exclusivity(worker_id, pil_image, None, exclusivity_conf)
+
+        exclusivity_status = "yes" if exclusivity_data["is_exclusive"] else "no"
+        non_ubl_count = exclusivity_data["non_ubl_count"]
+        non_ubl_products = exclusivity_data["non_ubl_products"]
+
+        # Step 5: Apply size variants
+        size_summary = {}
+        if SIZE_VARIANT_AVAILABLE and detections and assign_size_variants_simple:
+            detections = assign_size_variants_simple(detections)
+            size_summary = get_size_summary(detections)
+
+        # Build product breakdown
+        breakdown = defaultdict(int)
+        for det in detections:
+            breakdown[det['class_name']] += 1
+
+        # Log detected products
+        logger.info(f"[QPDS] Shelf Type: {shelf_type}")
+        logger.info(f"[QPDS] Total products detected: {len(detections)}")
+        logger.info(f"[QPDS] Product breakdown: {dict(breakdown)}")
+
+        # Step 6: Calculate variant compliance if QPDS is available and shelf_type is provided
+        variant_compliance = 0.0
+        product_accuracy = []
+        planogram_adherence = True
+        shelftalker_adherence = True
+
+        if QPDS_AVAILABLE and shelf_type:
+            # For compliance, use size-aware product breakdown
+            if size_summary:
+                size_aware_breakdown = {}
+                for product_name, sizes in size_summary.items():
+                    total_count = sum(sizes.values())
+                    size_aware_breakdown[product_name] = total_count
+                variant_compliance, product_accuracy = calculate_compliance(shelf_type, size_aware_breakdown)
+            else:
+                variant_compliance, product_accuracy = calculate_compliance(shelf_type, dict(breakdown))
+
+            # Check planogram adherence (product order left-to-right)
+            detection_list = []
+            for det in detections:
+                detection_list.append({
+                    'product_name': det['class_name'],
+                    'bbox_xyxy': det['bbox_xyxy']
+                })
+            planogram_adherence = check_planogram_adherence(shelf_type, detection_list)
+
+            # Check shelftalker adherence (minimum shelftalker count)
+            shelftalker_adherence = check_shelftalker_adherence(shelf_type, len(shelftalkers))
+
+            # Log planogram comparison
+            logger.info(f"[QPDS] Planogram comparison for {shelf_type}:")
+            for item in product_accuracy:
+                logger.info(f"  - {item['name']}: planned={item['planned']}, visible={item['visible']}, accuracy={item['accuracy']}%")
+            logger.info(f"[QPDS] Variant compliance: {variant_compliance}%")
+            logger.info(f"[QPDS] Planogram adherence (order): {'Pass' if planogram_adherence else 'Fail'}")
+            logger.info(f"[QPDS] Shelftalker adherence: {'Pass' if shelftalker_adherence else 'Fail'} ({len(shelftalkers)} detected)")
+
+        # Format products array with correct field names
+        products_formatted = []
+        total_planned = 0
+        total_visible = 0
+
+        for item in product_accuracy:
+            products_formatted.append({
+                "sku_name": item["name"],
+                "planned_qty": item["planned"],
+                "visible_qty": item["visible"],
+                "accuracy": item["accuracy"]
+            })
+            total_planned += item["planned"]
+            total_visible += item["visible"]
+
+        # Calculate overall compliance as (total_visible/total_planned)*100, capped at 100%
+        overall_compliance = min((total_visible / total_planned * 100) if total_planned > 0 else 0, 100.0)
+
+        # Log final results
+        logger.info(f"[QPDS] Final Results:")
+        logger.info(f"  Overall Compliance: {round(overall_compliance, 2)}%")
+        logger.info(f"  Total Planned: {total_planned}, Total Visible: {total_visible}")
+        logger.info(f"  Exclusivity: {exclusivity_status} (non-UBL: {non_ubl_count}, products: {non_ubl_products})")
+
+        return {
+            "model_version": "QPDS + Shelftalker + Exclusivity",
+            "shelf_type": shelf_type or "Unknown",
+            "status": "completed",
+
+            # API output fields (matching ai_summary.json)
+            "overall_compliance": round(overall_compliance, 2),
+            "planogram_adherence": "Yes" if planogram_adherence else "No",
+            "exclusively": "Yes" if exclusivity_status == "yes" else ("No" if exclusivity_status == "no" else "NA"),
+            "variant_compliance": variant_compliance,
+            "shelf_talker_present": "Yes" if len(shelftalkers) > 0 else "No",
+            "shelf_talker_orientation_correct": "Yes" if shelftalker_adherence else "No",
+
+            "products": products_formatted,
+            "totals": {
+                "total_planned": total_planned,
+                "total_visible": total_visible
+            },
+
+            # Non-redundant metadata
+            "no_of_shelftalker": len(shelftalkers),
+            "shelftalkers_detected": shelftalkers,
+            "total_products": len(detections),
+            "product_breakdown": dict(breakdown),
+            "selected_category": selected_category,
+            "size_summary": size_summary,
+            "method": method,
+            "non_ubl_count": non_ubl_count,
+            "non_ubl_products": non_ubl_products,
+
+            "summary": f"Fixed Shelf: {len(detections)} products, {round(overall_compliance, 2)}% compliance, " +
+                      f"Planogram: {'Pass' if planogram_adherence else 'Fail'}, " +
+                      f"Shelftalker: {'Pass' if shelftalker_adherence else 'Fail'}, " +
+                      f"Exclusivity: {exclusivity_status}"
+        }
+        logger.info(f"[Worker {worker_id}] [QPDS] ✓ Analysis complete: {len(detections)} products, {round(overall_compliance, 2)}% compliance")
+        return result
+
+    except Exception as e:
+        logger.error(f"[Worker {worker_id}] [QPDS] ❌ Error in analyze_fixed_shelf: {e}", exc_info=True)
+        return {
+            "error": str(e),
+            "summary": "Error processing Fixed Shelf"
+        }
+
+
+async def analyze_sachet(image_data: bytes, worker_id: int = 0) -> dict:
+    """Analyze Sachet Display"""
+    logger.info(f"[Worker {worker_id}] [SACHET] Starting Sachet analysis")
+    try:
+        # Load image
+        pil_image = Image.open(BytesIO(image_data)).convert("RGB")
+        img_width, img_height = pil_image.size
+        logger.info(f"[Worker {worker_id}] [SACHET] Image dimensions: {img_width}x{img_height}")
+        logger.debug(f"[Worker {worker_id}] [SACHET] Image size: {len(image_data)} bytes")
+
+        # Run sachet detection
+        conf = SACHET_CONFIG.get('confidence', 0.30)
+        logger.debug(f"[Worker {worker_id}] [SACHET] Running detection with conf={conf}")
+        results = model_manager.predict(
+            'sachet',
+            source=pil_image,
+            worker_id=worker_id,
+            conf=conf,
+            verbose=False
+        )
+
+        # Process detections with bounding boxes
+        detected_products = defaultdict(int)
+        detections = []
+        model_result = results[0] if results else None
+        
+        # Diagnostic logging for model results
+        if not model_result:
+            logger.warning(f"[Worker {worker_id}] [SACHET] ⚠ Model returned no results object")
+        elif not model_result.boxes:
+            logger.warning(f"[Worker {worker_id}] [SACHET] ⚠ Model returned results but no boxes detected (conf={conf})")
+        else:
+            raw_detection_count = len(model_result.boxes)
+            logger.info(f"[Worker {worker_id}] [SACHET] Model detected {raw_detection_count} boxes with conf>={conf}")
+
+        if model_result and model_result.boxes:
+            boxes = model_result.boxes.xyxy.cpu().numpy()
+            scores = model_result.boxes.conf.cpu().numpy()
+            class_ids = model_result.boxes.cls.cpu().numpy().astype(int)
+            
+            for box, score, class_id in zip(boxes, scores, class_ids):
+                class_name = model_result.names[int(class_id)]
+                detected_products[class_name] += 1
+                
+                # Store detection with bbox for compliance checks
+                detections.append({
+                    'bbox_xyxy': [float(box[0]), float(box[1]), float(box[2]), float(box[3])],
+                    'class_name': class_name,
+                    'confidence': float(score)
+                })
+            
+            logger.debug(f"[Worker {worker_id}] [SACHET] Detected products: {dict(detected_products)}")
+
+        # Calculate compliance with additional checks
+        compliance_score = 0.0
+        product_accuracy = []
+        additional_checks = {}
+
+        if SACHET_AVAILABLE and calculate_sachet_compliance:
+            compliance_score, product_accuracy, additional_checks = calculate_sachet_compliance(
+                dict(detected_products),
+                detections
+            )
+
+        # Build summary with additional checks
+        summary_parts = [f"Detected {sum(detected_products.values())} sachets with {compliance_score}% compliance"]
+
+        # Extract additional checks data
+        slot_adherence_data = additional_checks.get('slot_adherence', {})
+        orientation_adherence_data = additional_checks.get('orientation_adherence', {})
+        combined_hanger = additional_checks.get('combined_hanger', False)
+        brand_exclusive = additional_checks.get('brand_exclusive_hanger', False)
+
+        # Format orientation adherence for API
+        orientation_adherence_formatted = "NA"
+        if orientation_adherence_data:
+            orientation_adherence_formatted = "Yes" if orientation_adherence_data.get('adherence', False) else "No"
+            if orientation_adherence_data.get('adherence'):
+                summary_parts.append(f"Orientation: Pass")
+            else:
+                summary_parts.append(f"Orientation: Fail")
+
+        # Format slot adherence for API
+        slot_adherence_formatted = "NA"
+        if slot_adherence_data:
+            # NA if no hangers detected, otherwise Yes/No based on adherence
+            if slot_adherence_data.get('total_sachets', 0) == 0:
+                slot_adherence_formatted = "NA"
+            else:
+                slot_adherence_formatted = "Yes" if slot_adherence_data.get('adherence', False) else "No"
+
+            if slot_adherence_data.get('adherence'):
+                summary_parts.append(f"Slot Adherence: Pass")
+            else:
+                summary_parts.append(f"Slot Adherence: Fail")
+
+        # Format combined hanger info
+        combined_hanger_info = "Combined hanger display detected" if combined_hanger else "Single brand hanger display"
+        if combined_hanger:
+            summary_parts.append("Combined Hanger: Yes")
+
+        # Format brand exclusive hanger info
+        brand_exclusive_info = "Brand exclusive display" if brand_exclusive else "Mixed brand display"
+        if brand_exclusive:
+            summary_parts.append("Brand Exclusive: Yes")
+
+        return {
+            "model_version": "SACHET_YOLO11X",
+            "confidence": conf,
+            "total_sachets": sum(detected_products.values()),
+            "unique_products": len(detected_products),
+            "product_breakdown": dict(detected_products),
+            "compliance_score": compliance_score,
+            "product_accuracy": product_accuracy,
+
+            # Formatted output for API
+            "orientation_adherence": orientation_adherence_formatted,
+            "slot_adherence": slot_adherence_formatted,
+            "combined_sachet_hanger_info": combined_hanger_info,
+            "brand_exclusive_hanger_info": brand_exclusive_info,
+
+            # Raw data (kept for backward compatibility)
+            "slot_adherence_details": slot_adherence_data,
+            "orientation_adherence_details": orientation_adherence_data,
+            "combined_hanger": combined_hanger,
+            "brand_exclusive_hanger": brand_exclusive,
+
+            "summary": ", ".join(summary_parts)
+        }
+        logger.info(f"[Worker {worker_id}] [SACHET] ✓ Analysis complete: {result['total_sachets']} sachets, {compliance_score}% compliance")
+        return result
+
+    except Exception as e:
+        logger.error(f"[Worker {worker_id}] [SACHET] ❌ Error in analyze_sachet: {e}", exc_info=True)
+        return {
+            "error": str(e),
+            "summary": "Error processing Sachet"
+        }
+
+
+async def analyze_posm(image_data: bytes, worker_id: int = 0, posm_items: list = None) -> dict:
+    """Analyze POSM (Point of Sale Materials)
+
+    Args:
+        image_data: Image bytes
+        worker_id: Worker ID for GPU stream
+        posm_items: List of planned POSM items [{"posm_name": "Lux", "attached_posm": 2}, ...]
+    """
+    logger.info(f"[Worker {worker_id}] [POSM] Starting POSM analysis (posm_items={len(posm_items) if posm_items else 0})")
+    try:
+        # Load image
+        pil_image = Image.open(BytesIO(image_data)).convert("RGB")
+        img_width, img_height = pil_image.size
+        logger.info(f"[Worker {worker_id}] [POSM] Image dimensions: {img_width}x{img_height}")
+        logger.debug(f"[Worker {worker_id}] [POSM] Image size: {len(image_data)} bytes")
+
+        # Run POSM detection
+        conf = POSM_CONFIG.get('confidence', 0.30)
+        logger.debug(f"[Worker {worker_id}] [POSM] Running detection with conf={conf}")
+        results = model_manager.predict(
+            'posm',
+            source=pil_image,
+            worker_id=worker_id,
+            conf=conf,
+            verbose=False
+        )
+
+        # Process detections
+        detected_items = defaultdict(int)
+        model_result = results[0] if results else None
+        
+        # Diagnostic logging for model results
+        if not model_result:
+            logger.warning(f"[Worker {worker_id}] [POSM] ⚠ Model returned no results object")
+        elif not model_result.boxes:
+            logger.warning(f"[Worker {worker_id}] [POSM] ⚠ Model returned results but no boxes detected (conf={conf})")
+        else:
+            raw_detection_count = len(model_result.boxes)
+            logger.info(f"[Worker {worker_id}] [POSM] Model detected {raw_detection_count} boxes with conf>={conf}")
+
+        if model_result and model_result.boxes:
+            for box in model_result.boxes:
+                cls_id = int(box.cls[0])
+                class_name = model_result.names[cls_id]
+                detected_items[class_name] += 1
+            
+            logger.debug(f"[Worker {worker_id}] [POSM] Detected items: {dict(detected_items)}")
+
+        # Calculate compliance
+        compliance_score = 0.0
+        item_accuracy = []
+
+        if POSM_AVAILABLE and calculate_posm_compliance:
+            # Build planned_items from posm_items array
+            planned_items = {}
+            if posm_items:
+                for item in posm_items:
+                    posm_name = item.get("name")
+                    attached_posm = item.get("attached_posm", 0)
+                    if posm_name and attached_posm > 0:
+                        planned_items[posm_name] = attached_posm
+                        logger.info(f"[POSM] Setting planned: '{posm_name}' = {attached_posm}")
+
+            compliance_score, item_accuracy = calculate_posm_compliance(
+                dict(detected_items),
+                planned_items=planned_items
+            )
+
+        return {
+            "model_version": "POSM_YOLO11X",
+            "confidence": conf,
+            "total_posm": sum(detected_items.values()),
+            "unique_items": len(detected_items),
+            "detected_items": dict(detected_items),
+            "compliance_score": compliance_score,
+            "item_accuracy": item_accuracy,
+            "summary": f"Detected {sum(detected_items.values())} POSM items with {compliance_score}% compliance"
+        }
+        logger.info(f"[Worker {worker_id}] [POSM] ✓ Analysis complete: {result['total_posm']} items, {compliance_score}% compliance")
+        return result
+
+    except Exception as e:
+        logger.error(f"[Worker {worker_id}] [POSM] ❌ Error in analyze_posm: {e}", exc_info=True)
+        return {
+            "error": str(e),
+            "summary": "Error processing POSM"
+        }
+
+
+# ============================================================================
+# Visit Result Aggregation
+# ============================================================================
+# TODO-REFACTOR: Remove import when backend ready
+from utils.aggregator import VisitResultAggregator
+
+
+# TODO-REFACTOR: Remove when backend ready
+# Global visit aggregator
+visit_aggregator = VisitResultAggregator()
+
+
+# ============================================================================
+# Image Processing Pipeline
+# ============================================================================
+
+async def route_to_ai_model(image_type: str, image_data: bytes, worker_id: int = 0, metadata: dict = None) -> dict:
+    """Route to appropriate AI model based on image type"""
+    logger.info(f"[Worker {worker_id}] [ROUTER] Routing to AI model for image_type='{image_type}'")
+    model_mapping = {
+        "share_of_shelf": analyze_share_of_shelf,
+        "fixed_shelf": analyze_fixed_shelf,
+        "sachet": analyze_sachet,
+        "posm": analyze_posm,
+    }
+
+    analyzer = model_mapping.get(image_type)
+    if not analyzer:
+        logger.error(f"[Worker {worker_id}] [ROUTER] ❌ Unknown image type: {image_type}")
+        raise ValueError(f"Unknown image type: {image_type}")
+
+    # Pass additional metadata if needed
+    kwargs = {"worker_id": worker_id}
+    if image_type == "fixed_shelf" and metadata:
+        kwargs["shelf_type"] = metadata.get("shelf_type")
+        kwargs["selected_category"] = metadata.get("selected_category", "all")
+    elif image_type == "posm" and metadata:
+        kwargs["posm_items"] = metadata.get("posm_items", [])
+
+    return await analyzer(image_data, **kwargs)
+
+
+async def process_image(sqs_message, worker_id: int = 0):
+    """Process a single image from S3"""
+    try:
+        body = sqs_message['Body']
+        logger.debug(f"[Worker {worker_id}] SQS message received")
+        event = json.loads(body)
+
+        # Skip S3 test events
+        if event.get('Event') == 's3:TestEvent':
+            logger.debug(f"[Worker {worker_id}] Skipping S3 test event")
+            return
+
+        # Parse S3 event
+        s3_record = None
+        bucket = None
+        s3_key = None
+
+        if 'Records' in event:
+            s3_record = event['Records'][0]['s3']
+            bucket = s3_record['bucket']['name']
+            s3_key = s3_record['object']['key']
+        elif 's3' in event:
+            s3_record = event['s3']
+            bucket = s3_record['bucket']['name']
+            s3_key = s3_record['object']['key']
+        elif 'bucket' in event and 'key' in event:
+            bucket = event['bucket']
+            s3_key = event['key']
+        else:
+            logger.warning(f"[Worker {worker_id}] Unknown event structure: {json.dumps(event, indent=2)}")
+            return
+
+        # URL-decode the S3 key (S3 event notifications URL-encode special characters like & -> %26)
+        if s3_key:
+            s3_key = unquote_plus(s3_key)
+
+        # Skip folder paths (keys ending with /)
+        if s3_key.endswith('/'):
+            logger.debug(f"[Worker {worker_id}] Skipping folder path: {s3_key}")
+            return
+
+        # Skip non-image files
+        valid_extensions = ('.jpg', '.jpeg', '.png', '.bmp', '.webp')
+        if not s3_key.lower().endswith(valid_extensions):
+            logger.debug(f"[Worker {worker_id}] Skipping non-image file: {s3_key}")
+            return
+
+        logger.info(f"[Worker {worker_id}] Processing: {s3_key}")
+
+        # Fetch metadata
+        upload_id = 'unknown'
+        image_type = 'unknown'
+        visit_id = 'unknown'
+        shop_id = 'unknown'
+        shelf_type = None
+        channel = None
+        expected_images_count = 1
+        slab = None
+        sub_category = None
+        retake = False
+        retake_count = 0
+
+        try:
+            metadata_response = s3_client.head_object(Bucket=bucket, Key=s3_key)
+            metadata = metadata_response.get('Metadata', {})
+            logger.debug(f"[Worker {worker_id}] S3 Metadata: {metadata}")
+
+            upload_id = metadata.get('upload-id', 'unknown')
+            image_type = metadata.get('image-type', 'unknown')
+            visit_id = metadata.get('visit-id', metadata.get('visitid', 'unknown'))
+            
+            logger.info(f"[Worker {worker_id}] Metadata: visit_id={visit_id}, image_type={image_type}, upload_id={upload_id}")
+            shop_id = metadata.get('shop-id', 'unknown')
+            shelf_type = slab = metadata.get('slab')
+            channel = metadata.get('channel')
+            sub_category = metadata.get('sub-category')
+
+            # Get retake count first (how many times this has been retaken: 1, 2, 3...)
+            retake_count_str = metadata.get('retake-count', '0')
+            try:
+                retake_count = int(retake_count_str)
+            except (ValueError, TypeError):
+                retake_count = 0
+                logger.warning(f"Invalid retake-count: {retake_count_str}, defaulting to 0")
+
+            # Detect retake: either 'retake' flag is true OR retake_count > 0
+            retake_flag = metadata.get('retake', 'false').lower() == 'true'
+            retake = retake_flag or retake_count > 0
+            
+            # DEBUG: Log retake detection
+            if retake:
+                logger.info(f"🔄 RETAKE DETECTED for upload_id={upload_id}, visit_id={visit_id}")
+                logger.info(f"   Metadata: retake={metadata.get('retake')}, retake-count={metadata.get('retake-count')}")
+                logger.info(f"   Detected: retake_flag={retake_flag}, retake_count={retake_count}, retake={retake}")
+
+            # Extract POSM items
+            posm_items = []
+            posm_items_json = metadata.get('posm-items')
+            if posm_items_json:
+                try:
+                    posm_items = json.loads(posm_items_json)
+                except:
+                    logger.warning(f"Failed to parse posm-items: {posm_items_json}")
+                    posm_items = []
+
+            # Get expected images count for visit aggregation
+            # For retakes: ALWAYS default to 1 (no aggregation, immediate processing)
+            # Ignore any expected-images-count from presigned URL metadata
+            if retake:
+                expected_images_count = 1
+                logger.info(f"Retake detected (flag={retake_flag}, count={retake_count}): forcing expected_images_count=1")
+            else:
+                expected_images_str = metadata.get('expected-images-count', '1')
+                try:
+                    expected_images_count = int(expected_images_str)
+                except (ValueError, TypeError):
+                    expected_images_count = 1
+                    logger.warning(f"Invalid expected-images-count: {expected_images_str}, defaulting to 1")
+
+        except Exception as e:
+            logger.warning(f"Could not fetch metadata: {e}")
+
+        # Fallback: parse from S3 key
+        if image_type == 'unknown' or visit_id == 'unknown':
+            parts = s3_key.split('/')
+            if len(parts) >= 4 and parts[0] == 'raw':
+                visit_id = parts[1]
+                image_type = parts[2]
+
+        if retake:
+            logger.info(f"[Worker {worker_id}] Upload: {upload_id}, Type: {image_type}, Visit: {visit_id}, Retake: {retake}, Retake Count: {retake_count}")
+        else:
+            logger.info(f"[Worker {worker_id}] Upload: {upload_id}, Type: {image_type}, Visit: {visit_id}")
+
+        # Validate image type is supported
+        supported_types = ['share_of_shelf', 'fixed_shelf', 'sachet', 'posm']
+        if image_type not in supported_types:
+            logger.warning(f"[Worker {worker_id}] Unsupported image type '{image_type}', skipping. Supported: {supported_types}")
+            return
+
+        # Download image
+        image_obj = s3_client.get_object(Bucket=bucket, Key=s3_key)
+        image_data = image_obj['Body'].read()
+        
+        # Validate it's actually an image
+        if len(image_data) == 0:
+            logger.warning(f"[Worker {worker_id}] Empty file, skipping")
+            return
+        
+        logger.info(f"[Worker {worker_id}] Downloaded {len(image_data)} bytes")
+
+        # Process with AI
+        logger.info(f"[Worker {worker_id}] Running AI model: {image_type} for visit {visit_id}")
+
+        # Build metadata for AI model
+        ai_metadata = {}
+        if shelf_type or channel:
+            ai_metadata["shelf_type"] = shelf_type
+            ai_metadata["channel"] = channel
+        if image_type == "posm" and posm_items:
+            ai_metadata["posm_items"] = posm_items
+
+        ai_result = await route_to_ai_model(
+            image_type,
+            image_data,
+            worker_id=worker_id,
+            metadata=ai_metadata if ai_metadata else None
+        )
+        logger.info(f"[Worker {worker_id}] ✓ AI processing complete")
+        logger.info(f"[Worker {worker_id}] {image_type}: {ai_result.get('summary', 'Complete')}")
+        
+        # Check if AI result is empty or contains errors
+        if 'error' in ai_result:
+            logger.error(f"[Worker {worker_id}] ❌ AI ERROR for visit {visit_id}: {ai_result.get('error')}")
+        elif not ai_result or len(ai_result) <= 2:
+            logger.warning(f"[Worker {worker_id}] ⚠ EMPTY RESULT for visit {visit_id}, {image_type}")
+
+        # Debug logging for sachet processing
+        if image_type == "sachet":
+            logger.info(f"[SACHET DEBUG] Worker {worker_id}:")
+            logger.info(f"  upload_id: {upload_id}")
+            logger.info(f"  visit_id: {visit_id}")
+            logger.info(f"  s3_key: {s3_key}")
+            logger.info(f"  Detected products: {list(ai_result.get('product_breakdown', {}).keys())}")
+            logger.info(f"  Product counts: {ai_result.get('product_breakdown', {})}")
+            logger.info(f"  Expected images count: {expected_images_count}")
+
+        # Map internal image types to API field names
+        image_type_mapping = {
+            "fixed_shelf": "category_shelf_display",
+            "share_of_shelf": "share_of_shelf",
+            "sachet": "share_of_sachet",
+            "posm": "share_of_posm"
+        }
+        api_image_type = image_type_mapping.get(image_type, image_type)
+
+        # Prepare metadata for aggregator
+        result_metadata = {
+            "upload_id": upload_id,
+            "s3_key": s3_key,
+            "shop_id": shop_id,
+            "slab": slab,
+            "sub_category": sub_category,
+            "retake_count": retake_count
+        }
+
+        # TODO-REFACTOR: Replace this block when backend ready
+        # Future: Send per-image result immediately to SQS (no aggregation)
+        # Replace lines 1640-1659 with: sqs_client.send_message(QueueUrl=SQS_RESULTS_QUEUE_URL, MessageBody=json.dumps(per_image_result))
+
+        # Add result to visit aggregator
+        logger.info(f"[Worker {worker_id}] Adding result to aggregator for visit {visit_id}")
+        aggregated_result = visit_aggregator.add_result(
+            visit_id=visit_id,
+            image_type=api_image_type,
+            result=ai_result,
+            metadata=result_metadata,
+            expected_count=expected_images_count,
+            is_retake=retake
+        )
+
+        # If visit is complete, send aggregated result to SQS
+        if aggregated_result:
+            logger.info(f"[Worker {worker_id}] ===== VISIT COMPLETE =====")
+            logger.info(f"[Worker {worker_id}] Visit {visit_id} complete! Sending aggregated result to backend...")
+            
+            # Log aggregated result summary
+            image_types = list(aggregated_result.get('results', {}).keys())
+            logger.info(f"[Worker {worker_id}] Aggregated Report Summary for {visit_id}:")
+            logger.info(f"[Worker {worker_id}]   - Image types: {', '.join(image_types)}")
+            
+            # Show summary for each image type
+            for img_type, results_list in aggregated_result.get('results', {}).items():
+                if results_list and len(results_list) > 0:
+                    result = results_list[0]  # Get first result (or latest for retakes)
+                    summary = result.get('ai_result', {}).get('summary', 'N/A')
+                    logger.info(f"[Worker {worker_id}]   - {img_type}: {summary}")
+            
+            # Log full aggregated JSON at INFO level
+            logger.info(f"[Worker {worker_id}] Full Aggregated Result JSON:")
+            logger.info(json.dumps(aggregated_result))
+
+            try:
+                response = sqs_client.send_message(
+                    QueueUrl=SQS_RESULTS_QUEUE_URL,
+                    MessageBody=json.dumps(aggregated_result)
+                )
+                message_id = response.get('MessageId', 'unknown')
+                logger.info(f"[Worker {worker_id}] ✓ Aggregated result sent to SQS successfully (MessageId: {message_id})")
+                logger.info(f"[Worker {worker_id}] Visit {visit_id} processing complete")
+            except Exception as e:
+                logger.error(f"[Worker {worker_id}] ❌ FAILED to send aggregated result to SQS for visit {visit_id}: {e}", exc_info=True)
+                logger.error(f"[Worker {worker_id}] Visit {visit_id} will be LOST - result not delivered to backend!")
+        else:
+            logger.info(f"[Worker {worker_id}] Result stored, waiting for more images for visit {visit_id}")
+
+    except Exception as e:
+        logger.error(f"[Worker {worker_id}] Error: {e}", exc_info=True)
+
+
+# ============================================================================
+# Main Loop with Worker Pool
+# ============================================================================
+
+async def main():
+    """Main loop with multiple workers for concurrent processing"""
+    logger.info("="*60)
+    logger.info("UBL AI SERVER - FULL FEATURE PARITY")
+    logger.info("="*60)
+    logger.info(f"Device: {model_manager.device}")
+    logger.info(f"Workers: {NUM_INFERENCE_WORKERS}")
+    logger.info(f"Queue: {SQS_IMAGE_QUEUE_URL}")
+    logger.info(f"Results: {SQS_RESULTS_QUEUE_URL}")
+    logger.info(f"Bucket: {S3_BUCKET}")
+    logger.info(f"Size Variant Detection: {'Enabled' if SIZE_VARIANT_AVAILABLE else 'Disabled'}")
+    logger.info(f"QPDS Compliance: {'Enabled' if QPDS_AVAILABLE else 'Disabled'}")
+    logger.info(f"SOS Compliance: {'Enabled' if SOS_AVAILABLE else 'Disabled'}")
+    logger.info(f"Sachet Compliance: {'Enabled' if SACHET_AVAILABLE else 'Disabled'}")
+    logger.info(f"POSM Compliance: {'Enabled' if POSM_AVAILABLE else 'Disabled'}")
+    logger.info("="*60)
+    logger.info("Waiting for images to process...")
+
+    worker_id = 0
+
+    while True:
+        try:
+            response = sqs_client.receive_message(
+                QueueUrl=SQS_IMAGE_QUEUE_URL,
+                MaxNumberOfMessages=10,
+                WaitTimeSeconds=20,
+                MessageAttributeNames=['All']
+            )
+
+            messages = response.get('Messages', [])
+
+            if messages:
+                logger.info(f"Received {len(messages)} message(s)")
+
+                # Process messages concurrently with worker pool
+                tasks = []
+                for message in messages:
+                    task = asyncio.create_task(process_image(message, worker_id % NUM_INFERENCE_WORKERS))
+                    tasks.append((task, message))
+                    worker_id += 1
+
+                # Wait for ALL tasks concurrently (not sequentially!)
+                results = await asyncio.gather(*[t for t, _ in tasks], return_exceptions=True)
+
+                # Delete messages after processing
+                for (task, message), result in zip(tasks, results):
+                    try:
+                        if isinstance(result, Exception):
+                            logger.error(f"Error processing message: {result}")
+                        else:
+                            sqs_client.delete_message(
+                                QueueUrl=SQS_IMAGE_QUEUE_URL,
+                                ReceiptHandle=message['ReceiptHandle']
+                            )
+                    except Exception as e:
+                        logger.error(f"Error deleting message: {e}")
+                
+                await asyncio.sleep(SQS_POLL_INTERVAL)
+            else:
+                await asyncio.sleep(SQS_EMPTY_WAIT)
+
+        except KeyboardInterrupt:
+            logger.info("Shutting down AI server...")
+            break
+        except Exception as e:
+            logger.error(f"Error in main loop: {e}", exc_info=True)
+            await asyncio.sleep(2)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

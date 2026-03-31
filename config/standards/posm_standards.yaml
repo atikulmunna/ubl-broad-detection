@@ -1,0 +1,446 @@
+# POSM (Point of Sale Materials) Standards
+# Keys are standard/campaign names; ai_class is the YOLO model class name
+# Multiple standard names can share the same ai_class (e.g. Jan/Feb campaign variants)
+
+item_mappings:
+  Aloe Poster Festoon:
+    ai_class: aloe_poster_festoon
+    category: skin_care
+  Aloe Sunshade Banner:
+    ai_class: aloe_sunshade_banner
+    category: skin_care
+  Beauty Store Brochure:
+    ai_class: beauty_store_brochure
+    category: skin_care
+  Clear Men Sachet Hanger:
+    ai_class: clear_men_sachet_hanger
+    category: hair_care
+  Clear Sachet Hanger:
+    ai_class: clear_sachet_hanger
+    category: hair_care
+  Clear Men Hamza:
+    ai_class: clearmen_hamza
+    category: hair_care
+  Clear Men Hamza Bunting:
+    ai_class: clearmen_hamza_bunting
+    category: hair_care
+  Closeup Mug CP Poster:
+    ai_class: close_up_mug_cp_poster
+    category: oral_care
+  Closeup LS Bunting:
+    ai_class: closeup_ls_bunting
+    category: oral_care
+  Closeup LS Poster:
+    ai_class: closeup_ls_poster
+    category: oral_care
+  Closeup LS Sticker:
+    ai_class: closeup_ls_sticker
+    category: oral_care
+  Closeup LS Trade Letter:
+    ai_class: closeup_ls_trade_letter
+    category: oral_care
+  Closeup Relaunch Bunting Oct 25:
+    ai_class: closeup_relaunch_bunting_oct25
+    category: oral_care
+  Closeup Relaunch Poster Oct 25:
+    ai_class: closeup_relaunch_poster_oct25
+    category: oral_care
+  Closeup Relaunch Sticker Oct 25:
+    ai_class: closeup_relaunch_sticker_oct25
+    category: oral_care
+  Closeup RH Poster:
+    ai_class: closeup_rh_poster
+    category: oral_care
+  Closeup Shop Banner:
+    ai_class: closeup_shop_banner
+    category: oral_care
+  Domex Brand Tag:
+    ai_class: domex_brand_tag
+    category: home_and_hygiene
+  Domex Bunting CS:
+    ai_class: domex_bunting_cs
+    category: home_and_hygiene
+  Domex Jul Poster:
+    ai_class: domex_jul_poster
+    category: home_and_hygiene
+  Domex Poster:
+    ai_class: domex_poster
+    category: home_and_hygiene
+  Domex Poster Oct 24:
+    ai_class: domex_poster_oct24
+    category: home_and_hygiene
+  Domex Self Talker:
+    ai_class: domex_self_talker
+    category: home_and_hygiene
+  Domex Shop Fin:
+    ai_class: domex_shop_fin
+    category: home_and_hygiene
+  Domex Sunshade Banner:
+    ai_class: domex_sunshade_banner
+    category: home_and_hygiene
+  Domex Trade Letter:
+    ai_class: domex_trade_letter
+    category: home_and_hygiene
+  Dove 330ml Conditioner CP Poster:
+    ai_class: dove_330ml_cond_cp_poster
+    category: hair_care
+  Dove 6ml Bunting:
+    ai_class: dove_6ml_bunting
+    category: hair_care
+  Dove 6ml Poster Sep:
+    ai_class: dove_6ml_poster_sep
+    category: hair_care
+  Dove Hanger POSM:
+    ai_class: dove_hanger_posm
+    category: hair_care
+  Dove Round Hanger:
+    ai_class: dove_roundhanger
+    category: hair_care
+  Dove Shop Banner:
+    ai_class: dove_shop_banner
+    category: hair_care
+  "Glow & Lovely MV 15g Poster":
+    ai_class: gal_mv_15g_poster
+    category: skin_care
+  "Glow & Lovely MV 15g SS Banner":
+    ai_class: gal_mv_15g_ss_banner
+    category: skin_care
+  "Glow & Lovely MV 50g CP Poster":
+    ai_class: gal_mv_50g_cp_poster
+    category: skin_care
+  "Glow & Lovely Serum Corner Stand":
+    ai_class: gal_serum_corner_stand
+    category: skin_care
+  "Glow & Lovely Serum Shelf Fin":
+    ai_class: gal_serum_shelf_fin
+    category: skin_care
+  "Glow & Lovely Serum Table Talker":
+    ai_class: gal_serum_table_talker
+    category: skin_care
+  "Glow & Lovely Serum Table Top":
+    ai_class: gal_serum_table_top
+    category: skin_care
+  "Glow & Lovely Sunscreen Dangler":
+    ai_class: gal_sunscreen_dangler
+    category: skin_care
+  "Glow & Lovely Sunscreen Poster":
+    ai_class: gal_sunscreen_poster
+    category: skin_care
+  "Glow & Lovely Sunscreen Sticker":
+    ai_class: gal_sunscreen_sticker
+    category: skin_care
+  "Glow & Lovely Sunscreen Sunshade Banner":
+    ai_class: gal_sunscreen_sunshade_banner
+    category: skin_care
+  "Glow & Lovely TL CP Poster":
+    ai_class: gal_tl_cp_poster
+    category: skin_care
+  "Glow & Lovely Shop Banner":
+    ai_class: glow_lovely_shop_banner
+    category: skin_care
+  Glucomax Plastic Hanger:
+    ai_class: glucomax_plastic_hanger
+    category: nutrition
+  Hair Care Metal Sachet Hanger:
+    ai_class: hair_care_metal_sachet_hanger
+    category: hair_care
+  Horlicks 3 in 1 Sachet Hanger:
+    ai_class: horlicks_3_in_1_sachet_hanger
+    category: nutrition
+  Horlicks 3D Pack Shop Identifier:
+    ai_class: horlicks_3d_pack_shop_identifier
+    category: nutrition
+  Horlicks Sachet Hanger:
+    ai_class: horlicks_sachet_hanger
+    category: nutrition
+  Jr Horlicks CC ST:
+    ai_class: jr_horlicks_cc_st
+    category: nutrition
+  Lifebuoy Bar WC Poster Nov:
+    ai_class: lifebuoy_bar_wc_poster_nov
+    category: skin_cleansing
+  Lifebuoy Hand Wash Poster:
+    ai_class: lifebuoy_hand_wash_poster
+    category: skin_cleansing
+  Lifebuoy Hand Wash Price Board:
+    ai_class: lifebuoy_hand_wash_price_board
+    category: skin_cleansing
+  Lifebuoy Hand Wash Trade Letter:
+    ai_class: lifebuoy_hand_wash_trade_letter
+    category: skin_cleansing
+  Lifebuoy Handwash Shelf Box:
+    ai_class: lifebuoy_handwash_shelf_box
+    category: skin_cleansing
+  Lifebuoy HW 1L Poster Nov 25:
+    ai_class: lifebuoy_hw1l_poster_nov25
+    category: skin_cleansing
+  Lifebuoy Poster:
+    ai_class: lifebuoy_poster
+    category: skin_cleansing
+  Lifebuoy Shutter Sticker:
+    ai_class: lifebuoy_shutter_sticker
+    category: skin_cleansing
+  Lifebuoy Sunshade Banner:
+    ai_class: lifebuoy_sunshade_banner
+    category: skin_cleansing
+  Lifebuoy Table Poster:
+    ai_class: lifebuoy_table_poster
+    category: skin_cleansing
+  Lux 75g Poster:
+    ai_class: lux_75g_poster
+    category: skin_cleansing
+  Lux Bunting:
+    ai_class: lux_bunting
+    category: skin_cleansing
+  Lux Category Shelf Strip:
+    ai_class: lux_category_shelfstrip
+    category: skin_cleansing
+  Lux Fresh Glow Poster:
+    ai_class: lux_fresh_glow_poster
+    category: skin_cleansing
+  Lux Fresh Glow Poster Aug 25:
+    ai_class: lux_fresh_glow_poster_aug_25
+    category: skin_cleansing
+  Lux Poster Empty Pack Backing Sheet:
+    ai_class: lux_poster_emptypack_backingsheet
+    category: skin_cleansing
+  Lux Rolling Sticker:
+    ai_class: lux_rolling_sticker
+    category: skin_cleansing
+  Lux Shelf Talker:
+    ai_class: lux_shelftalker
+    category: skin_cleansing
+  Lux Shop Banner:
+    ai_class: lux_shop_banner
+    category: skin_cleansing
+  Lux Super Star Brand Tag:
+    ai_class: lux_super_star_brand_tag
+    category: skin_cleansing
+  Lux Superstar Shelf Strip Aug 25:
+    ai_class: lux_superstar_shelf_strip_aug25
+    category: skin_cleansing
+  Nutrition Store Brochure:
+    ai_class: nutrition_store_brochure
+    category: nutrition
+  Pepsodent Advanced Salt Poster:
+    ai_class: pepsodent_advanced_salt_poster
+    category: oral_care
+  Pepsodent Advanced Salt Sticker:
+    ai_class: pepsodent_advanced_salt_sticker
+    category: oral_care
+  Pepsodent GC Poster:
+    ai_class: pepsodent_gc_poster
+    category: oral_care
+  Pepsodent Poster Bunting:
+    ai_class: pepsodent_poster_bunting
+    category: oral_care
+  "Pond's Oil Control FW Poster":
+    ai_class: ponds_oil_control_fw_poster
+    category: skin_care
+  Rin 400g Trade Letter:
+    ai_class: rin_400g_trade_letter
+    category: fabric
+  Rin 40ml Poster:
+    ai_class: rin_40ml_poster
+    category: fabric
+  Rin Advanced Relaunch Bunting:
+    ai_class: rin_advanced_relaunch_bunting
+    category: fabric
+  Rin Advanced Relaunch Poster:
+    ai_class: rin_advanced_relaunch_poster
+    category: fabric
+  Rin Advanced Relaunch Shelf Strip:
+    ai_class: rin_advanced_relaunch_shelf_strip
+    category: fabric
+  Rin Advanced Sunshade Banner:
+    ai_class: rin_advanced_sunshade_banner
+    category: fabric
+  Rin NVC Poster:
+    ai_class: rin_nvc_poster
+    category: fabric
+  Rin Poster:
+    ai_class: rin_poster
+    category: fabric
+  Rin Sticker:
+    ai_class: rin_sticker
+    category: fabric
+  Rin Sunshade Banner:
+    ai_class: rin_sunshade_banner
+    category: fabric
+  Knorr Soup Nov 25:
+    ai_class: soup_nov25
+    category: mini_meals
+  Sunsilk 24ml Hanger:
+    ai_class: sunsilk_24ml_hanger
+    category: hair_care
+  Sunsilk 24ml Poster:
+    ai_class: sunsilk_24ml_poster
+    category: hair_care
+  Sunsilk Black Hanger Aug 25:
+    ai_class: sunsilk_black_hanger_aug_25
+    category: hair_care
+  Sunsilk Black Sunshade Banner Aug 25:
+    ai_class: sunsilk_black_sunshade_banner_aug_25
+    category: hair_care
+  Sunsilk Dove Conditioner Sachet Hanger:
+    ai_class: sunsilk_dove_conditioner_sachet_hanger
+    category: hair_care
+  Sunsilk Onion Poster:
+    ai_class: sunsilk_onion_poster
+    category: hair_care
+  Sunsilk Onion Shelf in Shelf:
+    ai_class: sunsilk_onion_shelf_in_shelf
+    category: hair_care
+  Sunsilk Onion Wobbler:
+    ai_class: sunsilk_onion_wobbler
+    category: hair_care
+  Sunsilk Shop Banner:
+    ai_class: sunsilk_shop_banner
+    category: hair_care
+  Sunsilk Sparkle Poster:
+    ai_class: sunsilk_sparkle_poster
+    category: hair_care
+  Surf Excel 500g CPP Trade Letter:
+    ai_class: surf_excel_500g_cpp_trade_letter
+    category: fabric
+  Surf Excel 75 Hanger:
+    ai_class: surf_excel_75_hanger
+    category: fabric
+  Surf Excel 75g Poster:
+    ai_class: surf_excel_75g_poster
+    category: fabric
+  Surf Excel Matic Dangler:
+    ai_class: surf_excel_matic_dangler
+    category: fabric
+  Surf Excel Matic LP Poster:
+    ai_class: surf_excel_matic_lp_poster
+    category: fabric
+  Surf Excel Matic Shelf Marker:
+    ai_class: surf_excel_matic_shelf_marker
+    category: fabric
+  Surf Excel Matic Trade Letter:
+    ai_class: surf_excel_matic_trade_letter
+    category: fabric
+  Surf Excel Matic Wobbler:
+    ai_class: surf_excel_matic_wobbler
+    category: fabric
+  Surf Excel Poster:
+    ai_class: surf_excel_poster
+    category: fabric
+  Surf Excel Sticker:
+    ai_class: surf_excel_sticker
+    category: fabric
+  Surf Excel Marvel Hanger May 25:
+    ai_class: surfexcel_marvel_hanger_may25
+    category: fabric
+  Surf Excel Marvel Poster May 25:
+    ai_class: surfexcel_marvel_poster_may25
+    category: fabric
+  Surf Excel Poster 120TK:
+    ai_class: surfexcel_poster_120tk
+    category: fabric
+  Surf Excel Sticker 120TK:
+    ai_class: surfexel_sticker_120tk
+    category: fabric
+  Vaseline Glutahya Hanging DMY 2:
+    ai_class: vaseline_glutahya_hanging_dmy_2
+    category: skin_care
+  Vaseline Glutahya Hanging TT 1:
+    ai_class: vaseline_glutahya_hanging_tt_1
+    category: skin_care
+  Vaseline Glutahya Product Standee:
+    ai_class: vaseline_glutahya_product_standee
+    category: skin_care
+  Vim 200ml Poster:
+    ai_class: vim_200ml_poster
+    category: home_and_hygiene
+  Vim 40ml Poster:
+    ai_class: vim_40ml_poster
+    category: home_and_hygiene
+  Vim 75g 125g Poster:
+    ai_class: vim_75g_125g_poster
+    category: home_and_hygiene
+  Vim Liquid 500ml CP Poster:
+    ai_class: vim_liqud_500ml_cp_poster
+    category: home_and_hygiene
+  Vim Liquid Placard:
+    ai_class: vim_liquid_placard
+    category: home_and_hygiene
+  Vim Liquid Poster:
+    ai_class: vim_liquid_poster
+    category: home_and_hygiene
+  Vim Pouch Hanger:
+    ai_class: vim_pouch_hanger
+    category: home_and_hygiene
+  Wheel 125g Poster:
+    ai_class: wheel_125g_poster
+    category: fabric
+  Wheel Powder Poster Aug 25:
+    ai_class: wheel_powder_poster_aug_25
+    category: fabric
+  Wheel Powder Sunshade Banner Aug 25:
+    ai_class: wheel_powder_sunshade_banner_aug_25
+    category: fabric
+  Wheel Poster Jan26:
+    ai_class: wheel_poster_dec25
+    category: fabric
+  Wheel Sunshade Jan26:
+    ai_class: wheel_sunshade_dec25
+    category: fabric
+  SUNSILK TRIPLE SACHET POSTER JAN26:
+    ai_class: sunsilk_triple_sachet_poster_jan26
+    category: hair_care
+  SUNSILK TRIPLE SACHET POSTER MAR26:
+    ai_class: sunsilk_triple_sachet_poster_jan26
+    category: hair_care
+  GAL RELAUNCH POSTER JAN26:
+    ai_class: gal_relaunch_poster_jan26
+    category: skin_care
+  GAL RELAUNCH POSTER FEB26:
+    ai_class: gal_relaunch_poster_jan26
+    category: skin_care
+  GAL RELAUNCH BUNTING JAN26:
+    ai_class: gal_relaunch_bunting_jan26
+    category: skin_care
+  GAL RELAUNCH SHELF STRIP JAN26:
+    ai_class: gal_relaunch_shelf_strip_feb26
+    category: skin_care
+  GAL RELAUNCH SHELF STRIP FEB26:
+    ai_class: gal_relaunch_shelf_strip_feb26
+    category: skin_care
+  PEPSODENT GERMICHECK POSTER FEB26:
+    ai_class: pepsodent_germicheck_poster_feb26
+    category: oral_care
+  PONDS LOCALISATION POSTER FEB26:
+    ai_class: ponds_localisation_poster_feb26
+    category: skin_care
+  PONDS LOCALISATION STICKER FEB26:
+    ai_class: ponds_localisation_sticker_feb26
+    category: skin_care
+  KNORR SOUP LARGE STICKER FEB26:
+    ai_class: knorr_soup_large_sticker_feb26
+    category: mini_meals
+  DOVE CONDITIONER SACHET HANGER JAN26:
+    ai_class: dove_conditioner_sachet_hanger_jan26
+    category: hair_care
+  DOVE CONDITIONER SACHET HANGER MAR26:
+    ai_class: dove_conditioner_sachet_hanger_jan26
+    category: hair_care
+  PS GAL ROLLING STICKER FEB26:
+    ai_class: [gal_shelftalker_bottom, gal_shelftalker_left, gal_shelftalker_right, gal_shelftalker_top]
+    category: skin_care
+  PS GAL PET SHEET FEB26:
+    ai_class: [gal_shelftalker_bottom, gal_shelftalker_left, gal_shelftalker_right, gal_shelftalker_top]
+    category: skin_care
+  PS PONDS ROLLING STICKER FEB26:
+    ai_class: [ponds_shelftalker_bottom, ponds_shelftalker_left, ponds_shelftalker_right, ponds_shelftalker_top]
+    category: skin_care
+  PS PONDS PET SHEET FEB26:
+    ai_class: [ponds_shelftalker_bottom, ponds_shelftalker_left, ponds_shelftalker_right, ponds_shelftalker_top]
+    category: skin_care
+  PS HAIR CARE ROLLING STICKER FEB26:
+    ai_class: [haircare_shelftalker_bottom, haircare_shelftalker_left, haircare_shelftalker_right, haircare_shelftalker_top]
+    category: hair_care
+  PS HAIR CARE PET SHEET FEB26:
+    ai_class: [haircare_shelftalker_bottom, haircare_shelftalker_left, haircare_shelftalker_right, haircare_shelftalker_top]
+    category: hair_care
