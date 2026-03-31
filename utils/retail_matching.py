@@ -45,6 +45,7 @@ def resolve_detection_with_catalog(detection: Dict, sub_category: str, index=Non
                 sub_category=sub_category,
                 catalog=catalog,
             )
+            resolved["match_source"] = "index_sku"
         elif summary["recognition_level"] == "brand_known" and (brand_agrees or not detector_brand_known):
             resolved = enrich_brand_detection(
                 summary["brand_key"],
@@ -52,6 +53,7 @@ def resolve_detection_with_catalog(detection: Dict, sub_category: str, index=Non
                 sub_category=sub_category,
                 catalog=catalog,
             )
+            resolved["match_source"] = "index_brand"
         else:
             resolved = enrich_brand_detection(
                 brand_key,
@@ -59,6 +61,7 @@ def resolve_detection_with_catalog(detection: Dict, sub_category: str, index=Non
                 sub_category=sub_category,
                 catalog=catalog,
             )
+            resolved["match_source"] = "detector_brand_fallback"
     else:
         resolved = enrich_brand_detection(
             brand_key,
@@ -66,6 +69,7 @@ def resolve_detection_with_catalog(detection: Dict, sub_category: str, index=Non
             sub_category=sub_category,
             catalog=catalog,
         )
+        resolved["match_source"] = "detector_brand_fallback"
 
     resolved["bbox_xyxy"] = detection.get("bbox_xyxy", [])
     resolved["detected_brand"] = brand_key
@@ -74,12 +78,14 @@ def resolve_detection_with_catalog(detection: Dict, sub_category: str, index=Non
 
 def summarize_resolved_instances(instances: List[Dict]) -> Dict:
     brand_breakdown = defaultdict(int)
+    match_source_breakdown = defaultdict(int)
     ubl_count = 0
     competitor_count = 0
     unknown_count = 0
 
     for instance in instances:
         brand_breakdown[instance.get("brand_display_name", instance.get("brand_key", "unknown"))] += 1
+        match_source_breakdown[instance.get("match_source", "unknown")] += 1
         if instance.get("recognition_level") == "unknown":
             unknown_count += 1
         elif instance.get("is_ubl"):
@@ -92,5 +98,6 @@ def summarize_resolved_instances(instances: List[Dict]) -> Dict:
         "competitor_count": competitor_count,
         "unknown_count": unknown_count,
         "brand_breakdown": dict(brand_breakdown),
+        "match_source_breakdown": dict(match_source_breakdown),
         "total_products": len(instances),
     }

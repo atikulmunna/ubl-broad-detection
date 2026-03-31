@@ -67,6 +67,7 @@ def analyze_retail_experiment(image_path: str, worker_id: int = 0, visit_id: str
             "competitor_count": summary_counts["competitor_count"],
             "unknown_count": summary_counts["unknown_count"],
             "brand_breakdown": summary_counts["brand_breakdown"],
+            "match_source_breakdown": summary_counts["match_source_breakdown"],
             "instances": enriched_instances,
             "index_runtime": index_status,
             "timing": {

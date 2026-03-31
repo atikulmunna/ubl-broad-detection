@@ -4,6 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+from utils.retail_index import DeterministicPathEmbedder, build_catalog_index
 from utils.retail_runtime import get_runtime_index_components, reset_runtime_index_cache
 
 
@@ -82,3 +83,43 @@ def test_runtime_index_components_cache_results():
     assert calls["count"] == 1
     assert first[2]["index_status"] == "loaded"
     assert second[2]["index_status"] == "loaded"
+
+
+def test_runtime_index_components_can_load_real_saved_index(tmp_path: Path):
+    reset_runtime_index_cache()
+    catalog = {
+        "brands": {
+            "dove": {
+                "display_name": "Dove",
+                "is_ubl": True,
+                "categories": ["hair_care"],
+                "skus": [
+                    {
+                        "product_id": "dove-hfr-small",
+                        "display_name": "Dove Hair Fall Rescue Small",
+                        "reference_images": ["dove-hfr-small/front.png"],
+                    }
+                ],
+            },
+            "unknown": {
+                "display_name": "Unknown",
+                "is_ubl": False,
+                "categories": [],
+                "skus": [],
+            },
+        }
+    }
+
+    embedder = DeterministicPathEmbedder(dimension=8)
+    index = build_catalog_index(embedder=embedder, catalog=catalog, reference_root=tmp_path)
+    output_dir = tmp_path / "index"
+    index.save(output_dir)
+
+    index_obj, embedder_obj, status = get_runtime_index_components(
+        {"use_saved_index": True, "index_dir": str(output_dir)},
+    )
+
+    assert index_obj.size == 1
+    assert embedder_obj.dimension == index_obj.dimension
+    assert status["index_used"] is True
+    assert status["index_status"] == "loaded"

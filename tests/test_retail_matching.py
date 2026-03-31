@@ -59,6 +59,7 @@ def test_resolve_detection_falls_back_to_brand_enrichment_without_index():
     assert resolved["recognition_level"] == "sku_known"
     assert resolved["bbox_xyxy"] == [1, 2, 3, 4]
     assert resolved["detected_brand"] == "dove"
+    assert resolved["match_source"] == "detector_brand_fallback"
 
 
 def test_resolve_detection_uses_catalog_index_when_query_is_available(tmp_path):
@@ -80,6 +81,7 @@ def test_resolve_detection_uses_catalog_index_when_query_is_available(tmp_path):
     assert resolved["brand_key"] == "dove"
     assert resolved["recognition_level"] == "sku_known"
     assert resolved["matched_product_id"] == "dove-hfr-small"
+    assert resolved["match_source"] == "index_sku"
 
 
 def test_resolve_detection_falls_back_when_index_match_is_weak(tmp_path):
@@ -100,16 +102,20 @@ def test_resolve_detection_falls_back_when_index_match_is_weak(tmp_path):
 
     assert resolved["brand_key"] == "nivea"
     assert resolved["detected_brand"] == "nivea"
+    assert resolved["match_source"] == "detector_brand_fallback"
 
 
 def test_summarize_resolved_instances_counts_known_and_unknown():
     summary = summarize_resolved_instances([
-        {"brand_display_name": "Dove", "is_ubl": True, "recognition_level": "sku_known"},
-        {"brand_display_name": "Nivea", "is_ubl": False, "recognition_level": "brand_known"},
-        {"brand_display_name": "Unknown", "is_ubl": False, "recognition_level": "unknown"},
+        {"brand_display_name": "Dove", "is_ubl": True, "recognition_level": "sku_known", "match_source": "index_sku"},
+        {"brand_display_name": "Nivea", "is_ubl": False, "recognition_level": "brand_known", "match_source": "index_brand"},
+        {"brand_display_name": "Unknown", "is_ubl": False, "recognition_level": "unknown", "match_source": "detector_brand_fallback"},
     ])
 
     assert summary["ubl_count"] == 1
     assert summary["competitor_count"] == 1
     assert summary["unknown_count"] == 1
     assert summary["brand_breakdown"]["Dove"] == 1
+    assert summary["match_source_breakdown"]["index_sku"] == 1
+    assert summary["match_source_breakdown"]["index_brand"] == 1
+    assert summary["match_source_breakdown"]["detector_brand_fallback"] == 1
