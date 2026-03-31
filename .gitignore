@@ -81,6 +81,8 @@ legacy/*
 results/
 CLAUDE.md
 debug_output/
+catalog/index/*
+!catalog/index/.gitkeep
 
 *.agent.md
 copilot-instructions.md
