@@ -74,6 +74,8 @@ retail_experiment:
   cls_batch_size: 8
   top_k_skus: 5
   unique_sku_match_limit: 1
+  use_saved_index: true
+  index_dir: "catalog/index"
 
 # Product Clustering (optional - for shelf row detection)
 clustering:
