@@ -10,6 +10,7 @@ from utils.retail_index import (
     CatalogIndexError,
     DeterministicPathEmbedder,
     audit_catalog_references,
+    build_onboarding_report,
     build_catalog_index,
     discover_reference_images,
     load_catalog_index,
@@ -197,3 +198,41 @@ def test_audit_catalog_references_reports_ready_and_missing(tmp_path: Path):
     assert audit["summary"]["missing_count"] == 1
     assert audit["ready"][0]["product_id"] == "dove-hfr-small"
     assert audit["missing"][0]["product_id"] == "dove-missing"
+
+
+def test_build_onboarding_report_groups_missing_skus_by_brand(tmp_path: Path):
+    catalog = {
+        "brands": {
+            "dove": {
+                "display_name": "Dove",
+                "is_ubl": True,
+                "categories": ["hair_care"],
+                "skus": [
+                    {"product_id": "dove-ready", "display_name": "Dove Ready", "reference_images": ["dove-ready/front.jpg"]},
+                    {"product_id": "dove-missing", "display_name": "Dove Missing"},
+                ],
+            },
+            "nivea": {
+                "display_name": "Nivea",
+                "is_ubl": False,
+                "categories": ["skin_care"],
+                "skus": [
+                    {"product_id": "nivea-missing", "display_name": "Nivea Missing"},
+                ],
+            },
+            "unknown": {
+                "display_name": "Unknown",
+                "is_ubl": False,
+                "categories": [],
+                "skus": [],
+            },
+        }
+    }
+
+    report = build_onboarding_report(catalog=catalog, reference_root=tmp_path)
+
+    assert report["summary"]["total_skus"] == 3
+    assert report["summary"]["missing_count"] == 2
+    assert "dove" in report["missing_by_brand"]
+    assert "nivea" in report["missing_by_brand"]
+    assert report["missing_by_brand"]["dove"]["skus"][0]["product_id"] == "dove-missing"

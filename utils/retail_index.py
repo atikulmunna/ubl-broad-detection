@@ -174,6 +174,32 @@ def audit_catalog_references(catalog: Dict = None, reference_root: Path = None) 
     }
 
 
+def build_onboarding_report(catalog: Dict = None, reference_root: Path = None) -> Dict:
+    """
+    Build a machine-readable onboarding report for catalog reference assets.
+    """
+    audit = audit_catalog_references(catalog=catalog, reference_root=reference_root)
+    missing_by_brand = {}
+
+    for item in audit["missing"]:
+        brand_key = item["brand_key"]
+        missing_by_brand.setdefault(brand_key, {
+            "brand_display_name": item["brand_display_name"],
+            "skus": [],
+        })
+        missing_by_brand[brand_key]["skus"].append({
+            "product_id": item["product_id"],
+            "display_name": item["display_name"],
+            "expected_reference_dir": str((Path(reference_root) if reference_root else REFERENCE_ROOT) / item["product_id"]),
+        })
+
+    return {
+        "summary": audit["summary"],
+        "missing_by_brand": missing_by_brand,
+        "ready": audit["ready"],
+    }
+
+
 class InMemoryCatalogIndex:
     """Tiny cosine-similarity index for catalog references."""
 

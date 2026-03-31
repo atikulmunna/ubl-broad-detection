@@ -32,5 +32,7 @@ This repo starts from the `labs` branch snapshot plus the early `retail_experime
 - Or declare `reference_images` directly in `config/standards/retail_catalog.yaml`
 - Audit readiness with:
   `python scripts/build_retail_index.py --audit-only`
+- Write an onboarding JSON report with:
+  `python scripts/build_retail_index.py --audit-only --report-file catalog/index/onboarding-report.json`
 - Build the local index with:
   `python scripts/build_retail_index.py`

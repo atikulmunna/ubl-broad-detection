@@ -14,7 +14,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from utils.retail_index import INDEX_ROOT, REFERENCE_ROOT, audit_catalog_references, build_catalog_index
+from utils.retail_index import (
+    INDEX_ROOT,
+    REFERENCE_ROOT,
+    audit_catalog_references,
+    build_catalog_index,
+    build_onboarding_report,
+)
 
 
 def parse_args():
@@ -34,6 +40,11 @@ def parse_args():
         action="store_true",
         help="Only report catalog reference readiness without writing an index.",
     )
+    parser.add_argument(
+        "--report-file",
+        default="",
+        help="Optional JSON file path for writing the onboarding report.",
+    )
     return parser.parse_args()
 
 
@@ -43,12 +54,19 @@ def main():
     output_dir = Path(args.output_dir)
 
     audit = audit_catalog_references(reference_root=reference_root)
+    report = build_onboarding_report(reference_root=reference_root)
     print(
         "Catalog reference audit: "
         f"{audit['summary']['ready_count']} ready, "
         f"{audit['summary']['missing_count']} missing, "
         f"{audit['summary']['total_skus']} total"
     )
+
+    if args.report_file:
+        report_path = Path(args.report_file)
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(__import__("json").dumps(report, indent=2), encoding="utf-8")
+        print(f"Report: {report_path}")
 
     if args.audit_only:
         return
