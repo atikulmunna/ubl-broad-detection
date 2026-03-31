@@ -70,7 +70,7 @@ def test_resolve_detection_uses_catalog_index_when_query_is_available(tmp_path):
         detection={
             "brand": "unknown",
             "confidence": 0.20,
-            "catalog_query": str((tmp_path / "dove-hfr-small" / "front.jpg").resolve()),
+            "query_image_path": str((tmp_path / "dove-hfr-small" / "front.jpg").resolve()),
         },
         sub_category="hair_care",
         index=index,
@@ -92,7 +92,7 @@ def test_resolve_detection_falls_back_when_index_match_is_weak(tmp_path):
         detection={
             "brand": "nivea",
             "confidence": 0.91,
-            "catalog_query": "completely-different-product",
+            "query_token": "completely-different-product",
         },
         sub_category="skin_care",
         index=index,
@@ -103,6 +103,7 @@ def test_resolve_detection_falls_back_when_index_match_is_weak(tmp_path):
     assert resolved["brand_key"] == "nivea"
     assert resolved["detected_brand"] == "nivea"
     assert resolved["match_source"] == "detector_brand_fallback"
+    assert resolved["query_source"] == "detection"
 
 
 def test_summarize_resolved_instances_counts_known_and_unknown():

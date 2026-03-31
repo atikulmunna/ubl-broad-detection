@@ -15,6 +15,7 @@ from typing import Dict, List
 
 from utils.retail_catalog import enrich_brand_detection, enrich_sku_match
 from utils.retail_index import summarize_matches
+from utils.retail_query import build_query_asset_from_detection
 
 
 def resolve_detection_with_catalog(detection: Dict, sub_category: str, index=None, embedder=None,
@@ -29,10 +30,11 @@ def resolve_detection_with_catalog(detection: Dict, sub_category: str, index=Non
     - otherwise fall back to detector brand -> catalog enrichment
     """
     brand_key = detection.get("brand", "unknown")
-    query_value = detection.get("catalog_query")
+    query_asset = build_query_asset_from_detection(detection)
+    has_query = bool(query_asset.get("image_path") or query_asset.get("fallback_token"))
 
-    if index is not None and embedder is not None and query_value:
-        query_embedding = embedder.embed_query(query_value)
+    if index is not None and embedder is not None and has_query:
+        query_embedding = embedder.embed_query_asset(query_asset)
         matches = index.search(query_embedding, top_k=top_k)
         summary = summarize_matches(matches)
         detector_brand_known = brand_key not in ("", "unknown", None)
@@ -73,6 +75,7 @@ def resolve_detection_with_catalog(detection: Dict, sub_category: str, index=Non
 
     resolved["bbox_xyxy"] = detection.get("bbox_xyxy", [])
     resolved["detected_brand"] = brand_key
+    resolved["query_source"] = query_asset.get("source", "unknown")
     return resolved
 
 

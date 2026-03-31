@@ -54,3 +54,14 @@ def test_file_content_hash_embedder_falls_back_to_string_query_when_file_missing
     vec = embedder.embed_query("nonexistent-query-token")
 
     assert vec.shape == (8,)
+
+
+def test_embedder_can_embed_query_asset():
+    embedder = DeterministicPathEmbedder(dimension=8)
+
+    vec = embedder.embed_query_asset({
+        "image_path": "catalog/references/demo/front.png",
+        "fallback_token": "dove",
+    })
+
+    assert vec.shape == (8,)

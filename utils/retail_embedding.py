@@ -22,6 +22,9 @@ class RetailEmbedder(Protocol):
     def embed_query(self, query: str) -> np.ndarray:
         ...
 
+    def embed_query_asset(self, query_asset: dict) -> np.ndarray:
+        ...
+
 
 class _BaseHashEmbedder:
     def __init__(self, dimension: int = 16):
@@ -58,6 +61,10 @@ class DeterministicPathEmbedder(_BaseHashEmbedder):
     def embed_query(self, query: str) -> np.ndarray:
         return self.embed_key(query)
 
+    def embed_query_asset(self, query_asset: dict) -> np.ndarray:
+        query_value = query_asset.get("image_path") or query_asset.get("fallback_token") or ""
+        return self.embed_query(query_value)
+
 
 class FileContentHashEmbedder(_BaseHashEmbedder):
     """
@@ -86,6 +93,13 @@ class FileContentHashEmbedder(_BaseHashEmbedder):
         else:
             payload = query.encode("utf-8")
         return self._vector_from_bytes(self._digest_bytes(payload))
+
+    def embed_query_asset(self, query_asset: dict) -> np.ndarray:
+        image_path = query_asset.get("image_path", "")
+        fallback_token = query_asset.get("fallback_token", "")
+        if image_path:
+            return self.embed_query(image_path)
+        return self.embed_query(fallback_token)
 
 
 def create_embedder(embedder_type: str = "deterministic_path", dimension: int = 16):
