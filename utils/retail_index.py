@@ -24,6 +24,7 @@ from utils.retail_catalog import VALIDATED_RETAIL_CATALOG
 
 REFERENCE_ROOT = Path("catalog") / "references"
 INDEX_ROOT = Path("catalog") / "index"
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 
 
 @dataclass(frozen=True)
@@ -88,6 +89,10 @@ class DeterministicPathEmbedder:
         return self.embed_key(query)
 
 
+def _is_reference_image(path: Path) -> bool:
+    return path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
+
+
 def discover_reference_images(catalog: Dict = None, reference_root: Path = None) -> List[CatalogReference]:
     catalog_data = catalog or VALIDATED_RETAIL_CATALOG
     root = Path(reference_root) if reference_root else REFERENCE_ROOT
@@ -105,7 +110,7 @@ def discover_reference_images(catalog: Dict = None, reference_root: Path = None)
                 relative_paths = sorted(
                     str(path.relative_to(root))
                     for path in (root / sku["product_id"]).glob("*")
-                    if path.is_file()
+                    if _is_reference_image(path)
                 )
                 source = "filesystem"
 
@@ -145,7 +150,7 @@ def audit_catalog_references(catalog: Dict = None, reference_root: Path = None) 
             filesystem_images = sorted(
                 str(path.relative_to(root))
                 for path in (root / sku["product_id"]).glob("*")
-                if path.is_file()
+                if _is_reference_image(path)
             )
 
             record = {

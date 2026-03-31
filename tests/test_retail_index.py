@@ -66,6 +66,7 @@ def test_discover_reference_images_can_scan_filesystem(tmp_path: Path):
     product_dir.mkdir()
     (product_dir / "front.jpg").write_text("front")
     (product_dir / "side.png").write_text("side")
+    (product_dir / "notes.txt").write_text("ignore me")
 
     catalog = {
         "brands": {
@@ -95,6 +96,38 @@ def test_discover_reference_images_can_scan_filesystem(tmp_path: Path):
 
     assert len(refs) == 2
     assert all(ref.source == "filesystem" for ref in refs)
+
+
+def test_discover_reference_images_ignores_non_image_files(tmp_path: Path):
+    product_dir = tmp_path / "dove-hfr-small"
+    product_dir.mkdir()
+    (product_dir / "notes.txt").write_text("ignore me")
+
+    catalog = {
+        "brands": {
+            "dove": {
+                "display_name": "Dove",
+                "is_ubl": True,
+                "categories": ["hair_care"],
+                "skus": [
+                    {
+                        "product_id": "dove-hfr-small",
+                        "display_name": "Dove Hair Fall Rescue Small",
+                    }
+                ],
+            },
+            "unknown": {
+                "display_name": "Unknown",
+                "is_ubl": False,
+                "categories": [],
+                "skus": [],
+            },
+        }
+    }
+
+    refs = discover_reference_images(catalog=catalog, reference_root=tmp_path)
+
+    assert refs == []
 
 
 def test_build_catalog_index_and_search_returns_best_match(tmp_path: Path):
