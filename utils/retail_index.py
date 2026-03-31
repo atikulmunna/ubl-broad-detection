@@ -125,6 +125,55 @@ def discover_reference_images(catalog: Dict = None, reference_root: Path = None)
     return references
 
 
+def audit_catalog_references(catalog: Dict = None, reference_root: Path = None) -> Dict:
+    """
+    Report which SKUs are ready for indexing and which still lack references.
+
+    A SKU is considered ready if either:
+    - it declares one or more `reference_images`, or
+    - files exist under `catalog/references/<product_id>/`
+    """
+    catalog_data = catalog or VALIDATED_RETAIL_CATALOG
+    root = Path(reference_root) if reference_root else REFERENCE_ROOT
+
+    ready = []
+    missing = []
+
+    for brand_key, brand_entry in catalog_data.get("brands", {}).items():
+        for sku in brand_entry.get("skus", []):
+            explicit_images = sku.get("reference_images", [])
+            filesystem_images = sorted(
+                str(path.relative_to(root))
+                for path in (root / sku["product_id"]).glob("*")
+                if path.is_file()
+            )
+
+            record = {
+                "brand_key": brand_key,
+                "brand_display_name": brand_entry.get("display_name", brand_key),
+                "product_id": sku["product_id"],
+                "display_name": sku.get("display_name", sku["product_id"]),
+                "explicit_reference_count": len(explicit_images),
+                "filesystem_reference_count": len(filesystem_images),
+                "reference_count": len(explicit_images) or len(filesystem_images),
+            }
+
+            if explicit_images or filesystem_images:
+                ready.append(record)
+            else:
+                missing.append(record)
+
+    return {
+        "ready": ready,
+        "missing": missing,
+        "summary": {
+            "ready_count": len(ready),
+            "missing_count": len(missing),
+            "total_skus": len(ready) + len(missing),
+        },
+    }
+
+
 class InMemoryCatalogIndex:
     """Tiny cosine-similarity index for catalog references."""
 

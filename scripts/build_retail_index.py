@@ -14,7 +14,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from utils.retail_index import INDEX_ROOT, REFERENCE_ROOT, build_catalog_index
+from utils.retail_index import INDEX_ROOT, REFERENCE_ROOT, audit_catalog_references, build_catalog_index
 
 
 def parse_args():
@@ -29,6 +29,11 @@ def parse_args():
         default=str(INDEX_ROOT),
         help="Directory where the built index files will be written.",
     )
+    parser.add_argument(
+        "--audit-only",
+        action="store_true",
+        help="Only report catalog reference readiness without writing an index.",
+    )
     return parser.parse_args()
 
 
@@ -36,6 +41,17 @@ def main():
     args = parse_args()
     reference_root = Path(args.reference_root)
     output_dir = Path(args.output_dir)
+
+    audit = audit_catalog_references(reference_root=reference_root)
+    print(
+        "Catalog reference audit: "
+        f"{audit['summary']['ready_count']} ready, "
+        f"{audit['summary']['missing_count']} missing, "
+        f"{audit['summary']['total_skus']} total"
+    )
+
+    if args.audit_only:
+        return
 
     index = build_catalog_index(reference_root=reference_root)
     saved = index.save(output_dir)

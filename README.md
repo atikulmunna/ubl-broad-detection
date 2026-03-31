@@ -25,3 +25,12 @@ This repo starts from the `labs` branch snapshot plus the early `retail_experime
 - experimental catalog metadata in `config/standards/retail_catalog.yaml`
 - experimental analyzer path for `retail_experiment`
 - roadmap in `docs/plans/2026-03-31-retail-catalog-roadmap.md`
+
+## Catalog Workflow
+
+- Put product reference images under `catalog/references/<product_id>/`
+- Or declare `reference_images` directly in `config/standards/retail_catalog.yaml`
+- Audit readiness with:
+  `python scripts/build_retail_index.py --audit-only`
+- Build the local index with:
+  `python scripts/build_retail_index.py`

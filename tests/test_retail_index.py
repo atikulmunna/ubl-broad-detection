@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from utils.retail_index import (
     CatalogIndexError,
     DeterministicPathEmbedder,
+    audit_catalog_references,
     build_catalog_index,
     discover_reference_images,
     load_catalog_index,
@@ -154,3 +155,45 @@ def test_catalog_index_can_be_saved_and_loaded(tmp_path: Path):
     query = embedder.embed_query(str((tmp_path / "dove-hfr-small" / "front.jpg").resolve()))
     matches = loaded.search(query, top_k=1)
     assert matches[0].product_id == "dove-hfr-small"
+
+
+def test_audit_catalog_references_reports_ready_and_missing(tmp_path: Path):
+    (tmp_path / "dove-hfr-small").mkdir()
+    (tmp_path / "dove-hfr-small" / "front.jpg").write_text("front")
+
+    catalog = {
+        "brands": {
+            "dove": {
+                "display_name": "Dove",
+                "is_ubl": True,
+                "categories": ["hair_care"],
+                "skus": [
+                    {
+                        "product_id": "dove-hfr-small",
+                        "display_name": "Dove Hair Fall Rescue Small",
+                        "categories": ["hair_care"],
+                        "pack_type": "bottle",
+                    },
+                    {
+                        "product_id": "dove-missing",
+                        "display_name": "Dove Missing",
+                        "categories": ["hair_care"],
+                        "pack_type": "bottle",
+                    },
+                ],
+            },
+            "unknown": {
+                "display_name": "Unknown",
+                "is_ubl": False,
+                "categories": [],
+                "skus": [],
+            },
+        }
+    }
+
+    audit = audit_catalog_references(catalog=catalog, reference_root=tmp_path)
+
+    assert audit["summary"]["ready_count"] == 1
+    assert audit["summary"]["missing_count"] == 1
+    assert audit["ready"][0]["product_id"] == "dove-hfr-small"
+    assert audit["missing"][0]["product_id"] == "dove-missing"
