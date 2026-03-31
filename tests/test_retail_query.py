@@ -39,3 +39,13 @@ def test_build_query_asset_from_detection_falls_back_to_brand_token():
     assert asset["image_path"] == ""
     assert asset["fallback_token"] == "nivea"
     assert asset["source"] == "detection"
+
+
+def test_build_query_asset_from_detection_uses_query_token_when_present():
+    asset = build_query_asset_from_detection({
+        "brand": "nivea",
+        "query_token": "explicit-token",
+    })
+
+    assert asset["image_path"] == ""
+    assert asset["fallback_token"] == "explicit-token"
