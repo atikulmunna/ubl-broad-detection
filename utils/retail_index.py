@@ -19,7 +19,7 @@ from typing import Dict, List, Sequence
 
 import numpy as np
 
-from utils.retail_embedding import DeterministicPathEmbedder
+from utils.retail_embedding import create_embedder
 from utils.retail_catalog import VALIDATED_RETAIL_CATALOG
 
 
@@ -176,9 +176,11 @@ def build_onboarding_report(catalog: Dict = None, reference_root: Path = None) -
 class InMemoryCatalogIndex:
     """Tiny cosine-similarity index for catalog references."""
 
-    def __init__(self, references: Sequence[CatalogReference], embeddings: np.ndarray):
+    def __init__(self, references: Sequence[CatalogReference], embeddings: np.ndarray,
+                 embedder_type: str = "deterministic_path"):
         self.references = list(references)
         self.embeddings = np.asarray(embeddings, dtype=np.float32)
+        self.embedder_type = embedder_type
 
         if len(self.references) != len(self.embeddings):
             raise CatalogIndexError("Reference count must match embedding count")
@@ -234,6 +236,7 @@ class InMemoryCatalogIndex:
         manifest = {
             "size": self.size,
             "dimension": self.dimension,
+            "embedder_type": self.embedder_type,
             "references": [asdict(reference) for reference in self.references],
         }
         manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
@@ -255,18 +258,19 @@ class InMemoryCatalogIndex:
         embeddings = np.load(embeddings_path)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         references = [CatalogReference(**item) for item in manifest.get("references", [])]
-        return cls(references, embeddings)
+        return cls(references, embeddings, embedder_type=manifest.get("embedder_type", "deterministic_path"))
 
 
-def build_catalog_index(embedder: DeterministicPathEmbedder = None, catalog: Dict = None,
-                        reference_root: Path = None) -> InMemoryCatalogIndex:
-    embedder = embedder or DeterministicPathEmbedder()
+def build_catalog_index(embedder=None, catalog: Dict = None,
+                        reference_root: Path = None, embedder_type: str = "deterministic_path",
+                        dimension: int = 16) -> InMemoryCatalogIndex:
+    embedder = embedder or create_embedder(embedder_type=embedder_type, dimension=dimension)
     references = discover_reference_images(catalog=catalog, reference_root=reference_root)
     if not references:
-        return InMemoryCatalogIndex([], np.zeros((0, embedder.dimension), dtype=np.float32))
+        return InMemoryCatalogIndex([], np.zeros((0, embedder.dimension), dtype=np.float32), embedder_type=embedder_type)
 
     embeddings = np.vstack([embedder.embed_reference(reference) for reference in references])
-    return InMemoryCatalogIndex(references, embeddings)
+    return InMemoryCatalogIndex(references, embeddings, embedder_type=embedder_type)
 
 
 def load_catalog_index(index_root: Path = None) -> InMemoryCatalogIndex:

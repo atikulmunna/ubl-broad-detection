@@ -7,6 +7,7 @@ from PIL import Image
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from utils.retail_crops import attach_query_crops
+from utils.retail_crops import summarize_query_crops
 
 
 def test_attach_query_crops_writes_crop_images(tmp_path: Path):
@@ -36,3 +37,15 @@ def test_attach_query_crops_falls_back_for_invalid_bbox(tmp_path: Path):
 
     assert updated[0]["query_image_path"] == ""
     assert updated[0]["query_source"] == "detection"
+
+
+def test_summarize_query_crops_counts_crop_and_fallback_paths():
+    summary = summarize_query_crops([
+        {"query_image_path": "crops/one.png"},
+        {"query_image_path": ""},
+        {"query_image_path": "crops/two.png"},
+    ])
+
+    assert summary["total_detections"] == 3
+    assert summary["crop_ready"] == 2
+    assert summary["fallback_only"] == 1

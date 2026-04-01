@@ -56,3 +56,21 @@ def attach_query_crops(image_path: str, detections: List[Dict], output_dir: str)
             updated.append(updated_detection)
 
     return updated
+
+
+def summarize_query_crops(detections: List[Dict]) -> Dict:
+    total = len(detections)
+    crop_ready = 0
+    fallback_only = 0
+
+    for detection in detections:
+        if detection.get("query_image_path"):
+            crop_ready += 1
+        else:
+            fallback_only += 1
+
+    return {
+        "total_detections": total,
+        "crop_ready": crop_ready,
+        "fallback_only": fallback_only,
+    }

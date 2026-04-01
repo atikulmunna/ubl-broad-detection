@@ -32,8 +32,8 @@ def _catalog_with_explicit_refs():
                         "categories": ["hair_care"],
                         "pack_type": "bottle",
                         "reference_images": [
-                            "dove-hfr-small/front.jpg",
-                            "dove-hfr-small/angle.jpg",
+                            "dove-hfr-small/front.png",
+                            "dove-hfr-small/angle.png",
                         ],
                     }
                 ],
@@ -58,7 +58,7 @@ def test_discover_reference_images_uses_explicit_catalog_paths(tmp_path: Path):
     assert refs[0].product_id == "dove-hfr-small"
     assert refs[0].brand_key == "dove"
     assert refs[0].source == "catalog"
-    assert refs[0].image_path.endswith(str(Path("dove-hfr-small") / "front.jpg"))
+    assert refs[0].image_path.endswith(str(Path("dove-hfr-small") / "front.png"))
 
 
 def test_discover_reference_images_can_scan_filesystem(tmp_path: Path):
@@ -135,7 +135,7 @@ def test_build_catalog_index_and_search_returns_best_match(tmp_path: Path):
     catalog = _catalog_with_explicit_refs()
     index = build_catalog_index(embedder=embedder, catalog=catalog, reference_root=tmp_path)
 
-    query = embedder.embed_query(str((tmp_path / "dove-hfr-small" / "front.jpg").resolve()))
+    query = embedder.embed_query(str((tmp_path / "dove-hfr-small" / "front.png").resolve()))
     matches = index.search(query, top_k=1)
 
     assert index.size == 2
@@ -160,7 +160,7 @@ def test_summarize_matches_returns_expected_recognition_levels(tmp_path: Path):
     embedder = DeterministicPathEmbedder(dimension=8)
     index = build_catalog_index(embedder=embedder, catalog=_catalog_with_explicit_refs(), reference_root=tmp_path)
 
-    strong_query = embedder.embed_query(str((tmp_path / "dove-hfr-small" / "front.jpg").resolve()))
+    strong_query = embedder.embed_query(str((tmp_path / "dove-hfr-small" / "front.png").resolve()))
     strong_match = index.search(strong_query, top_k=1)
     strong_summary = summarize_matches(strong_match, sku_score_threshold=0.95, brand_score_threshold=0.70)
 
@@ -185,8 +185,9 @@ def test_catalog_index_can_be_saved_and_loaded(tmp_path: Path):
     assert Path(saved["embeddings_path"]).exists()
     assert loaded.size == index.size
     assert loaded.dimension == index.dimension
+    assert loaded.embedder_type == index.embedder_type
 
-    query = embedder.embed_query(str((tmp_path / "dove-hfr-small" / "front.jpg").resolve()))
+    query = embedder.embed_query(str((tmp_path / "dove-hfr-small" / "front.png").resolve()))
     matches = loaded.search(query, top_k=1)
     assert matches[0].product_id == "dove-hfr-small"
 
@@ -269,3 +270,19 @@ def test_build_onboarding_report_groups_missing_skus_by_brand(tmp_path: Path):
     assert "dove" in report["missing_by_brand"]
     assert "nivea" in report["missing_by_brand"]
     assert report["missing_by_brand"]["dove"]["skus"][0]["product_id"] == "dove-missing"
+
+
+def test_build_catalog_index_records_embedder_type(tmp_path: Path):
+    product_dir = tmp_path / "dove-hfr-small"
+    product_dir.mkdir()
+    (product_dir / "front.png").write_bytes(b"front")
+    (product_dir / "angle.png").write_bytes(b"angle")
+
+    index = build_catalog_index(
+        catalog=_catalog_with_explicit_refs(),
+        reference_root=tmp_path,
+        embedder_type="file_content_hash",
+        dimension=8,
+    )
+
+    assert index.embedder_type == "file_content_hash"

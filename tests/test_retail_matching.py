@@ -1,9 +1,13 @@
 import sys
 import os
+from pathlib import Path
+
+from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from utils.retail_index import DeterministicPathEmbedder, build_catalog_index
+from utils.retail_embedding import DeterministicPathEmbedder, create_embedder
+from utils.retail_index import build_catalog_index
 from utils.retail_matching import resolve_detection_with_catalog, summarize_resolved_instances
 
 
@@ -20,7 +24,7 @@ def _catalog():
                         "display_name": "Dove Hair Fall Rescue Small",
                         "categories": ["hair_care"],
                         "pack_type": "bottle",
-                        "reference_images": ["dove-hfr-small/front.jpg"],
+                        "reference_images": ["dove-hfr-small/front.png"],
                     }
                 ],
             },
@@ -34,7 +38,7 @@ def _catalog():
                         "display_name": "Nivea Cream",
                         "categories": ["skin_care"],
                         "pack_type": "jar",
-                        "reference_images": ["nivea-cream/front.jpg"],
+                        "reference_images": ["nivea-cream/front.png"],
                     }
                 ],
             },
@@ -70,7 +74,7 @@ def test_resolve_detection_uses_catalog_index_when_query_is_available(tmp_path):
         detection={
             "brand": "unknown",
             "confidence": 0.20,
-            "query_image_path": str((tmp_path / "dove-hfr-small" / "front.jpg").resolve()),
+            "query_image_path": str((tmp_path / "dove-hfr-small" / "front.png").resolve()),
         },
         sub_category="hair_care",
         index=index,
@@ -120,3 +124,59 @@ def test_summarize_resolved_instances_counts_known_and_unknown():
     assert summary["match_source_breakdown"]["index_sku"] == 1
     assert summary["match_source_breakdown"]["index_brand"] == 1
     assert summary["match_source_breakdown"]["detector_brand_fallback"] == 1
+
+
+def test_resolve_detection_can_use_file_content_hash_with_real_crop(tmp_path: Path):
+    ref_dir = tmp_path / "dove-hfr-small"
+    ref_dir.mkdir()
+    ref_path = ref_dir / "front.png"
+    Image.new("RGB", (16, 16), (0, 255, 0)).save(ref_path)
+
+    query_path = tmp_path / "query.png"
+    Image.new("RGB", (16, 16), (0, 255, 0)).save(query_path)
+
+    catalog = {
+        "brands": {
+            "dove": {
+                "display_name": "Dove",
+                "is_ubl": True,
+                "categories": ["hair_care"],
+                "skus": [
+                    {
+                        "product_id": "dove-hfr-small",
+                        "display_name": "Dove Hair Fall Rescue Small",
+                        "categories": ["hair_care"],
+                        "pack_type": "bottle",
+                        "reference_images": ["dove-hfr-small/front.png"],
+                    }
+                ],
+            },
+            "unknown": {
+                "display_name": "Unknown",
+                "is_ubl": False,
+                "categories": [],
+                "skus": [],
+            },
+        }
+    }
+
+    embedder = create_embedder("file_content_hash", dimension=8)
+    index = build_catalog_index(embedder=embedder, catalog=catalog, reference_root=tmp_path, embedder_type="file_content_hash")
+
+    resolved = resolve_detection_with_catalog(
+        detection={
+            "brand": "unknown",
+            "confidence": 0.10,
+            "query_image_path": str(query_path),
+            "query_source": "crop",
+        },
+        sub_category="hair_care",
+        index=index,
+        embedder=embedder,
+        catalog=catalog,
+    )
+
+    assert resolved["brand_key"] == "dove"
+    assert resolved["matched_product_id"] == "dove-hfr-small"
+    assert resolved["match_source"] == "index_sku"
+    assert resolved["query_source"] == "crop"

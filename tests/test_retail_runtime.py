@@ -39,6 +39,7 @@ def test_runtime_index_components_can_load_saved_index():
     assert embedder.embedder_type == "deterministic_path"
     assert status["index_used"] is True
     assert status["index_status"] == "loaded"
+    assert status["index_embedder_type"] == "unknown"
 
 
 def test_runtime_index_components_respect_disabled_setting():
@@ -114,7 +115,7 @@ def test_runtime_index_components_can_load_real_saved_index(tmp_path: Path):
     }
 
     embedder = create_embedder("deterministic_path", dimension=8)
-    index = build_catalog_index(embedder=embedder, catalog=catalog, reference_root=tmp_path)
+    index = build_catalog_index(embedder=embedder, catalog=catalog, reference_root=tmp_path, embedder_type="deterministic_path")
     output_dir = tmp_path / "index"
     index.save(output_dir)
 
@@ -126,3 +127,4 @@ def test_runtime_index_components_can_load_real_saved_index(tmp_path: Path):
     assert embedder_obj.dimension == index_obj.dimension
     assert status["index_used"] is True
     assert status["index_status"] == "loaded"
+    assert status["index_embedder_type"] == "deterministic_path"

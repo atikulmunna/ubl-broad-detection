@@ -13,7 +13,7 @@ from typing import Dict
 
 from config.loader import RETAIL_EXPERIMENT_CONFIG
 from core.detection import _detect_products_two_stage_sos
-from utils.retail_crops import attach_query_crops
+from utils.retail_crops import attach_query_crops, summarize_query_crops
 from utils.retail_matching import resolve_detection_with_catalog, summarize_resolved_instances
 from utils.retail_runtime import get_runtime_index_components
 
@@ -48,6 +48,7 @@ def analyze_retail_experiment(image_path: str, worker_id: int = 0, visit_id: str
 
         with tempfile.TemporaryDirectory(prefix="retail_query_crops_") as crop_dir:
             detections = attach_query_crops(image_path, detections, crop_dir)
+            query_preparation = summarize_query_crops(detections)
 
             enriched_instances = [
                 resolve_detection_with_catalog(
@@ -75,6 +76,7 @@ def analyze_retail_experiment(image_path: str, worker_id: int = 0, visit_id: str
             "match_source_breakdown": summary_counts["match_source_breakdown"],
             "instances": enriched_instances,
             "index_runtime": index_status,
+            "query_preparation": query_preparation,
             "timing": {
                 "total_ms": round(total_ms, 1),
                 "detection_ms": round(detection_ms, 1),

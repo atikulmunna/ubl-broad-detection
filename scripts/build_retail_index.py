@@ -14,6 +14,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from config.loader import RETAIL_EXPERIMENT_CONFIG
 from utils.retail_index import (
     INDEX_ROOT,
     REFERENCE_ROOT,
@@ -52,6 +53,7 @@ def main():
     args = parse_args()
     reference_root = Path(args.reference_root)
     output_dir = Path(args.output_dir)
+    embedder_type = RETAIL_EXPERIMENT_CONFIG.get("embedder_type", "deterministic_path")
 
     audit = audit_catalog_references(reference_root=reference_root)
     report = build_onboarding_report(reference_root=reference_root)
@@ -71,10 +73,11 @@ def main():
     if args.audit_only:
         return
 
-    index = build_catalog_index(reference_root=reference_root)
+    index = build_catalog_index(reference_root=reference_root, embedder_type=embedder_type)
     saved = index.save(output_dir)
 
     print(f"Built retail index with {index.size} references and dimension {index.dimension}")
+    print(f"Embedder: {index.embedder_type}")
     print(f"Manifest: {saved['manifest_path']}")
     print(f"Embeddings: {saved['embeddings_path']}")
 

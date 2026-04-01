@@ -58,6 +58,7 @@ def get_runtime_index_components(config: Dict = None, index_loader=load_catalog_
                 "index_reference_count": index.size,
                 "index_dimension": index.dimension,
                 "embedder_type": embedder_type,
+                "index_embedder_type": getattr(index, "embedder_type", "unknown"),
             },
         )
     except (CatalogIndexError, FileNotFoundError, OSError):
