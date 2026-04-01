@@ -40,11 +40,17 @@ This repo starts from the `labs` branch snapshot plus the early `retail_experime
 ## Small-Batch Evaluation
 
 - Put a few benchmark cases in `catalog/evaluation/sample_benchmark.json`
-- Each case should point to a real image, the detections you want to test, and expected outputs
+- Put full shelf images under `catalog/evaluation/images/`
+- Each case should point to a real shelf image, the detections you want to test, and expected outputs
 - Relative image paths in the manifest are resolved from the manifest folder
 - Run:
   `python scripts/evaluate_retail_benchmark.py`
 - The latest report is written to:
   `catalog/evaluation/latest_report.json`
-- To append one quick case from the command line:
-  `python scripts/add_retail_benchmark_case.py --case-id demo --image-path ..\\references\\dove-hair-fall-rescue-small\\front.png --sub-category hair_care --bbox 0,0,64,64 --expected-brand dove --expected-recognition sku_known --expected-product-id dove-hair-fall-rescue-small`
+- A case can contain many detections from one shelf image
+- `expected_summary` can be used to check shelf-level counts such as `ubl_count`, `competitor_count`, and `unknown_count`
+- `catalog/references/` is for single-product reference images only
+- To append one quick single-detection case from the command line:
+  `python scripts/add_retail_benchmark_case.py --case-id demo --image-path images\\shelf_01.jpg --sub-category hair_care --bbox 0,0,64,64 --expected-brand dove --expected-recognition brand_known`
+- To append a full multi-product shelf case from JSON:
+  `python scripts/add_retail_benchmark_case.py --case-json catalog\\evaluation\\case_mixed_shelf.json`

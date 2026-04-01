@@ -1,0 +1,35 @@
+{
+  "case_id": "shelf_case_001",
+  "image_path": "images/shelf_001.jpg",
+  "sub_category": "hair_care",
+  "detections": [
+    {
+      "brand": "unknown",
+      "confidence": 0.2,
+      "bbox_xyxy": [0, 0, 100, 200]
+    },
+    {
+      "brand": "unknown",
+      "confidence": 0.2,
+      "bbox_xyxy": [110, 0, 210, 200]
+    }
+  ],
+  "expected_instances": [
+    {
+      "brand_key": "dove",
+      "recognition_level": "brand_known",
+      "is_ubl": true
+    },
+    {
+      "brand_key": "nivea",
+      "recognition_level": "brand_known",
+      "is_ubl": false
+    }
+  ],
+  "expected_summary": {
+    "total_products": 2,
+    "ubl_count": 1,
+    "competitor_count": 1,
+    "unknown_count": 0
+  }
+}

@@ -57,6 +57,12 @@ def validate_benchmark_cases(cases: List[Dict]) -> List[str]:
         expected_instances = case.get("expected_instances")
         if not isinstance(expected_instances, list):
             issues.append(f"{case_id}: expected_instances must be a list")
+        elif detections is not None and isinstance(detections, list) and len(expected_instances) != len(detections):
+            issues.append(f"{case_id}: expected_instances count must match detections count when provided")
+
+        expected_summary = case.get("expected_summary")
+        if expected_summary is not None and not isinstance(expected_summary, dict):
+            issues.append(f"{case_id}: expected_summary must be an object when provided")
 
     return issues
 
@@ -64,15 +70,17 @@ def validate_benchmark_cases(cases: List[Dict]) -> List[str]:
 def evaluate_benchmark_cases(cases: List[Dict], runtime_config: Dict, top_k_skus: int,
                              catalog: Dict) -> Dict:
     case_results = []
-    total_instances = 0
     correct_brand = 0
     correct_sku = 0
     correct_recognition = 0
+    correct_ubl = 0
     passed_cases = 0
+    passed_summaries = 0
 
     for case in cases:
         case_name = case.get("case_id") or case.get("name") or f"case_{len(case_results) + 1}"
         expected_instances = case.get("expected_instances", [])
+        expected_summary = case.get("expected_summary", {})
 
         pipeline_result = process_retail_detections(
             image_path=case["image_path"],
@@ -98,18 +106,23 @@ def evaluate_benchmark_cases(cases: List[Dict], runtime_config: Dict, top_k_skus
             })
 
             if actual is not None:
-                total_instances += 1
                 if checks.get("brand_key", True):
                     correct_brand += 1
                 if "matched_product_id" in expected and checks.get("matched_product_id", False):
                     correct_sku += 1
                 if "recognition_level" in expected and checks.get("recognition_level", False):
                     correct_recognition += 1
+                if "is_ubl" in expected and checks.get("is_ubl", False):
+                    correct_ubl += 1
 
         count_match = len(actual_instances) == len(expected_instances)
-        case_passed = count_match and all(item["passed"] for item in instance_checks)
+        summary_checks = _evaluate_summary_expectation(expected_summary, pipeline_result["summary_counts"])
+        summary_passed = all(summary_checks.values()) if summary_checks else True
+        case_passed = count_match and all(item["passed"] for item in instance_checks) and summary_passed
         if case_passed:
             passed_cases += 1
+        if summary_passed:
+            passed_summaries += 1
 
         case_results.append({
             "case_id": case_name,
@@ -118,6 +131,8 @@ def evaluate_benchmark_cases(cases: List[Dict], runtime_config: Dict, top_k_skus
             "actual_instance_count": len(actual_instances),
             "count_match": count_match,
             "instance_checks": instance_checks,
+            "summary_checks": summary_checks,
+            "summary_passed": summary_passed,
             "summary_counts": pipeline_result["summary_counts"],
             "index_runtime": pipeline_result["index_runtime"],
             "query_preparation": pipeline_result["query_preparation"],
@@ -128,16 +143,22 @@ def evaluate_benchmark_cases(cases: List[Dict], runtime_config: Dict, top_k_skus
     recognition_expectations = sum(1 for case in cases for expected in case.get("expected_instances", [])
                                    if "recognition_level" in expected)
     brand_expectations = sum(len(case.get("expected_instances", [])) for case in cases)
+    ubl_expectations = sum(1 for case in cases for expected in case.get("expected_instances", [])
+                           if "is_ubl" in expected)
+    summary_expectations = sum(1 for case in cases if case.get("expected_summary"))
 
     return {
         "summary": {
             "total_cases": len(cases),
             "passed_cases": passed_cases,
             "failed_cases": len(cases) - passed_cases,
+            "passed_summaries": passed_summaries,
             "total_expected_instances": brand_expectations,
             "brand_accuracy": _safe_ratio(correct_brand, brand_expectations),
             "sku_accuracy": _safe_ratio(correct_sku, sku_expectations),
             "recognition_accuracy": _safe_ratio(correct_recognition, recognition_expectations),
+            "ubl_accuracy": _safe_ratio(correct_ubl, ubl_expectations),
+            "summary_accuracy": _safe_ratio(passed_summaries, summary_expectations),
         },
         "cases": case_results,
     }
@@ -174,10 +195,18 @@ def append_benchmark_case(benchmark_path: str, case: Dict) -> None:
 def _evaluate_instance_expectation(expected: Dict, actual: Optional[Dict]) -> Dict[str, bool]:
     checks = {}
 
-    for field in ("brand_key", "matched_product_id", "recognition_level", "match_source"):
+    for field in ("brand_key", "matched_product_id", "recognition_level", "match_source", "is_ubl"):
         if field in expected:
             checks[field] = actual is not None and actual.get(field) == expected[field]
 
+    return checks
+
+
+def _evaluate_summary_expectation(expected: Dict, actual: Dict) -> Dict[str, bool]:
+    checks = {}
+    for field in ("total_products", "ubl_count", "competitor_count", "unknown_count"):
+        if field in expected:
+            checks[field] = actual.get(field) == expected[field]
     return checks
 
 

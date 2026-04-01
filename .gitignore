@@ -84,6 +84,7 @@ debug_output/
 catalog/index/*
 !catalog/index/.gitkeep
 catalog/evaluation/latest_report.json
+catalog/evaluation/images/
 
 *.agent.md
 copilot-instructions.md
