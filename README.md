@@ -36,3 +36,12 @@ This repo starts from the `labs` branch snapshot plus the early `retail_experime
   `python scripts/build_retail_index.py --audit-only --report-file catalog/index/onboarding-report.json`
 - Build the local index with:
   `python scripts/build_retail_index.py`
+
+## Small-Batch Evaluation
+
+- Put a few benchmark cases in `catalog/evaluation/sample_benchmark.json`
+- Each case should point to a real image, the detections you want to test, and expected outputs
+- Run:
+  `python scripts/evaluate_retail_benchmark.py`
+- The latest report is written to:
+  `catalog/evaluation/latest_report.json`
