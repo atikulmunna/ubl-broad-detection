@@ -43,6 +43,10 @@ This repo starts from the `labs` branch snapshot plus the early `retail_experime
 - Put full shelf images under `catalog/evaluation/images/`
 - Each case should point to a real shelf image, the detections you want to test, and expected outputs
 - Relative image paths in the manifest are resolved from the manifest folder
+- To scaffold a single-case JSON from a shelf image:
+  `python scripts/create_retail_case_template.py --image-path catalog\\evaluation\\images\\shelf_001.jpg --case-id shelf_001 --output-file catalog\\evaluation\\case_shelf_001.json --sub-category hair_care`
+- To render a labeled preview while annotating:
+  `python scripts/render_retail_case_preview.py --case-file catalog\\evaluation\\case_shelf_001.json --output-file catalog\\evaluation\\previews\\shelf_001.png`
 - Run:
   `python scripts/evaluate_retail_benchmark.py`
 - The latest report is written to:
