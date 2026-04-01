@@ -8,7 +8,13 @@ from PIL import Image
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.retail_embedding import create_embedder
-from utils.retail_evaluator import evaluate_benchmark_cases, load_benchmark_cases, save_evaluation_report
+from utils.retail_evaluator import (
+    append_benchmark_case,
+    evaluate_benchmark_cases,
+    load_benchmark_cases,
+    save_evaluation_report,
+    validate_benchmark_cases,
+)
 from utils.retail_index import build_catalog_index
 from utils.retail_runtime import reset_runtime_index_cache
 
@@ -48,6 +54,21 @@ def test_load_benchmark_cases_supports_object_payload(tmp_path: Path):
 
     assert len(cases) == 1
     assert cases[0]["case_id"] == "one"
+
+
+def test_load_benchmark_cases_resolves_relative_image_paths(tmp_path: Path):
+    image_path = tmp_path / "images" / "scene.png"
+    image_path.parent.mkdir(parents=True)
+    image_path.write_bytes(b"fake-image")
+    benchmark_path = tmp_path / "benchmark.json"
+    benchmark_path.write_text(
+        json.dumps({"cases": [{"case_id": "one", "image_path": "images/scene.png"}]}),
+        encoding="utf-8",
+    )
+
+    cases = load_benchmark_cases(str(benchmark_path))
+
+    assert cases[0]["image_path"] == str(image_path.resolve())
 
 
 def test_evaluate_benchmark_cases_scores_brand_and_sku_matches(tmp_path: Path):
@@ -112,6 +133,39 @@ def test_evaluate_benchmark_cases_scores_brand_and_sku_matches(tmp_path: Path):
     assert report["summary"]["sku_accuracy"] == 1.0
     assert report["summary"]["recognition_accuracy"] == 1.0
     assert report["cases"][0]["passed"] is True
+
+
+def test_validate_benchmark_cases_reports_missing_image(tmp_path: Path):
+    cases = [
+        {
+            "case_id": "broken_case",
+            "image_path": str(tmp_path / "missing.png"),
+            "detections": [],
+            "expected_instances": [],
+        }
+    ]
+
+    issues = validate_benchmark_cases(cases)
+
+    assert len(issues) == 1
+    assert "broken_case" in issues[0]
+
+
+def test_append_benchmark_case_adds_to_manifest(tmp_path: Path):
+    benchmark_path = tmp_path / "benchmark.json"
+
+    append_benchmark_case(
+        str(benchmark_path),
+        {
+            "case_id": "new_case",
+            "image_path": "images/sample.png",
+            "detections": [],
+            "expected_instances": [],
+        },
+    )
+
+    payload = json.loads(benchmark_path.read_text(encoding="utf-8"))
+    assert payload["cases"][0]["case_id"] == "new_case"
 
 
 def test_save_evaluation_report_writes_json(tmp_path: Path):

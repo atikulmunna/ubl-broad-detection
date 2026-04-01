@@ -10,6 +10,7 @@ from utils.retail_evaluator import (
     evaluate_benchmark_cases,
     load_benchmark_cases,
     save_evaluation_report,
+    validate_benchmark_cases,
 )
 
 
@@ -28,6 +29,10 @@ def main():
     args = parser.parse_args()
 
     cases = load_benchmark_cases(args.benchmark_file)
+    issues = validate_benchmark_cases(cases)
+    if issues:
+        raise ValueError("Invalid benchmark manifest:\n- " + "\n- ".join(issues))
+
     report = evaluate_benchmark_cases(
         cases=cases,
         runtime_config=RETAIL_EXPERIMENT_CONFIG,

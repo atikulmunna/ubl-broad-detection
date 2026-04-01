@@ -41,7 +41,10 @@ This repo starts from the `labs` branch snapshot plus the early `retail_experime
 
 - Put a few benchmark cases in `catalog/evaluation/sample_benchmark.json`
 - Each case should point to a real image, the detections you want to test, and expected outputs
+- Relative image paths in the manifest are resolved from the manifest folder
 - Run:
   `python scripts/evaluate_retail_benchmark.py`
 - The latest report is written to:
   `catalog/evaluation/latest_report.json`
+- To append one quick case from the command line:
+  `python scripts/add_retail_benchmark_case.py --case-id demo --image-path ..\\references\\dove-hair-fall-rescue-small\\front.png --sub-category hair_care --bbox 0,0,64,64 --expected-brand dove --expected-recognition sku_known --expected-product-id dove-hair-fall-rescue-small`

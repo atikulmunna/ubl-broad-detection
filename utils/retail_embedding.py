@@ -7,10 +7,12 @@ index, or matching layers.
 """
 
 import hashlib
+import io
 from pathlib import Path
 from typing import Protocol
 
 import numpy as np
+from PIL import Image
 
 
 class RetailEmbedder(Protocol):
@@ -37,7 +39,7 @@ class _BaseHashEmbedder:
         if not payload:
             payload = b"\0"
         for index, byte in enumerate(payload):
-            values[index % self.dimension] += (byte + 1) / 255.0
+            values[index % self.dimension] += (byte - 127.5) / 127.5
         norm = np.linalg.norm(values)
         if norm == 0:
             return values
@@ -79,17 +81,29 @@ class FileContentHashEmbedder(_BaseHashEmbedder):
         path = Path(path_value)
         return path.read_bytes()
 
+    def _read_normalized_image_bytes(self, path_value: str) -> bytes:
+        with Image.open(path_value) as image:
+            normalized = image.convert("RGB")
+            size_payload = f"{normalized.width}x{normalized.height}".encode("utf-8")
+            return size_payload + b"|" + normalized.tobytes()
+
     def _digest_bytes(self, payload: bytes) -> bytes:
         return hashlib.sha256(payload).digest()
 
     def embed_reference(self, reference) -> np.ndarray:
-        payload = self._read_file_bytes(reference.image_path)
+        try:
+            payload = self._read_normalized_image_bytes(reference.image_path)
+        except Exception:
+            payload = self._read_file_bytes(reference.image_path)
         return self._vector_from_bytes(self._digest_bytes(payload))
 
     def embed_query(self, query: str) -> np.ndarray:
         path = Path(query)
         if path.exists():
-            payload = self._read_file_bytes(query)
+            try:
+                payload = self._read_normalized_image_bytes(query)
+            except Exception:
+                payload = self._read_file_bytes(query)
         else:
             payload = query.encode("utf-8")
         return self._vector_from_bytes(self._digest_bytes(payload))

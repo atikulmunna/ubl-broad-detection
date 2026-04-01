@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import numpy as np
+from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -37,7 +38,7 @@ def test_deterministic_path_embedder_is_stable():
 
 def test_file_content_hash_embedder_uses_file_contents(tmp_path: Path):
     image_path = tmp_path / "front.png"
-    image_path.write_bytes(b"image-bytes")
+    Image.new("RGB", (16, 16), (10, 200, 10)).save(image_path)
 
     embedder = FileContentHashEmbedder(dimension=8)
     ref = _Ref(str(image_path))
@@ -46,6 +47,21 @@ def test_file_content_hash_embedder_uses_file_contents(tmp_path: Path):
     vec2 = embedder.embed_query(str(image_path))
 
     assert np.allclose(vec1, vec2)
+
+
+def test_file_content_hash_embedder_matches_reencoded_same_pixels(tmp_path: Path):
+    ref_path = tmp_path / "reference.png"
+    query_path = tmp_path / "query.png"
+
+    Image.new("RGB", (16, 16), (20, 120, 220)).save(ref_path)
+    with Image.open(ref_path) as image:
+        image.convert("RGB").save(query_path)
+
+    embedder = FileContentHashEmbedder(dimension=8)
+    ref_vec = embedder.embed_reference(_Ref(str(ref_path)))
+    query_vec = embedder.embed_query(str(query_path))
+
+    assert np.allclose(ref_vec, query_vec)
 
 
 def test_file_content_hash_embedder_falls_back_to_string_query_when_file_missing():

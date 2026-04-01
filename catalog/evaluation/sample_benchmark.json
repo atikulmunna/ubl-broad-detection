@@ -1,3 +1,42 @@
 {
-  "cases": []
+  "cases": [
+    {
+      "case_id": "smoke_dove_reference",
+      "image_path": "../references/dove-hair-fall-rescue-small/front.png",
+      "sub_category": "hair_care",
+      "detections": [
+        {
+          "brand": "unknown",
+          "confidence": 0.2,
+          "bbox_xyxy": [0, 0, 64, 64]
+        }
+      ],
+      "expected_instances": [
+        {
+          "brand_key": "dove",
+          "matched_product_id": "dove-hair-fall-rescue-small",
+          "recognition_level": "sku_known"
+        }
+      ]
+    },
+    {
+      "case_id": "smoke_sunsilk_reference",
+      "image_path": "../references/sunsilk-black-shine-small/front.png",
+      "sub_category": "hair_care",
+      "detections": [
+        {
+          "brand": "unknown",
+          "confidence": 0.2,
+          "bbox_xyxy": [0, 0, 64, 64]
+        }
+      ],
+      "expected_instances": [
+        {
+          "brand_key": "sunsilk",
+          "matched_product_id": "sunsilk-black-shine-small",
+          "recognition_level": "sku_known"
+        }
+      ]
+    }
+  ]
 }

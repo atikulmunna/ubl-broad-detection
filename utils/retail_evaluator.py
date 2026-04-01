@@ -13,6 +13,7 @@ from utils.retail_pipeline import process_retail_detections
 
 
 def load_benchmark_cases(benchmark_path: str) -> List[Dict]:
+    benchmark_file = Path(benchmark_path)
     with open(benchmark_path, "r", encoding="utf-8") as handle:
         payload = json.load(handle)
 
@@ -26,7 +27,38 @@ def load_benchmark_cases(benchmark_path: str) -> List[Dict]:
     if not isinstance(cases, list):
         raise ValueError("Benchmark cases must be a list")
 
-    return cases
+    normalized = []
+    for case in cases:
+        normalized_case = dict(case)
+        image_path = normalized_case.get("image_path")
+        if image_path:
+            normalized_case["image_path"] = str(_resolve_case_path(image_path, benchmark_file.parent))
+        normalized.append(normalized_case)
+
+    return normalized
+
+
+def validate_benchmark_cases(cases: List[Dict]) -> List[str]:
+    issues = []
+
+    for index, case in enumerate(cases):
+        case_id = case.get("case_id") or f"case_{index + 1}"
+        image_path = case.get("image_path")
+
+        if not image_path:
+            issues.append(f"{case_id}: missing image_path")
+        elif not Path(image_path).exists():
+            issues.append(f"{case_id}: image_path does not exist: {image_path}")
+
+        detections = case.get("detections")
+        if not isinstance(detections, list):
+            issues.append(f"{case_id}: detections must be a list")
+
+        expected_instances = case.get("expected_instances")
+        if not isinstance(expected_instances, list):
+            issues.append(f"{case_id}: expected_instances must be a list")
+
+    return issues
 
 
 def evaluate_benchmark_cases(cases: List[Dict], runtime_config: Dict, top_k_skus: int,
@@ -118,6 +150,27 @@ def save_evaluation_report(report: Dict, output_path: str) -> None:
         json.dump(report, handle, indent=2)
 
 
+def append_benchmark_case(benchmark_path: str, case: Dict) -> None:
+    benchmark_file = Path(benchmark_path)
+    benchmark_file.parent.mkdir(parents=True, exist_ok=True)
+
+    if benchmark_file.exists():
+        with open(benchmark_file, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    else:
+        payload = {"cases": []}
+
+    if isinstance(payload, list):
+        payload = {"cases": payload}
+    if "cases" not in payload or not isinstance(payload["cases"], list):
+        raise ValueError("Benchmark file must contain a list or an object with a 'cases' list")
+
+    payload["cases"].append(case)
+
+    with open(benchmark_file, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+
+
 def _evaluate_instance_expectation(expected: Dict, actual: Optional[Dict]) -> Dict[str, bool]:
     checks = {}
 
@@ -132,3 +185,10 @@ def _safe_ratio(numerator: int, denominator: int) -> Optional[float]:
     if denominator == 0:
         return None
     return round(numerator / denominator, 4)
+
+
+def _resolve_case_path(path_str: str, base_dir: Path) -> Path:
+    path = Path(path_str)
+    if path.is_absolute():
+        return path
+    return (base_dir / path).resolve()
