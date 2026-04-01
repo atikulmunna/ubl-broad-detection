@@ -77,6 +77,7 @@ retail_experiment:
   use_saved_index: true
   index_dir: "catalog/index"
   embedder_type: "file_content_hash"
+  crop_expand_ratio: 0.12
 
 # Product Clustering (optional - for shelf row detection)
 clustering:

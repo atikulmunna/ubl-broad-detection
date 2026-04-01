@@ -72,9 +72,10 @@ def test_process_retail_detections_uses_saved_index_with_query_inputs(tmp_path: 
         "use_saved_index": True,
         "index_dir": str(index_dir),
         "embedder_type": "file_content_hash",
+        "crop_expand_ratio": 0.1,
     }
 
-    def fake_attach_query_crops(image_path, detections, output_dir):
+    def fake_attach_query_crops(image_path, detections, output_dir, expand_ratio=0.0):
         updated = []
         for detection in detections:
             item = dict(detection)
@@ -97,6 +98,7 @@ def test_process_retail_detections_uses_saved_index_with_query_inputs(tmp_path: 
     assert result["index_runtime"]["index_status"] == "loaded"
     assert result["index_runtime"]["index_embedder_type"] == "file_content_hash"
     assert result["query_preparation"]["crop_ready"] == 1
+    assert result["query_preparation"]["expanded_crop_count"] == 0
     assert result["summary_counts"]["total_products"] == 1
     assert result["instances"][0]["match_source"] == "index_sku"
     assert result["instances"][0]["brand_key"] == "dove"

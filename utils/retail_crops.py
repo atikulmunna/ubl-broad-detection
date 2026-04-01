@@ -11,11 +11,22 @@ from typing import Dict, List
 from PIL import Image
 
 
-def _normalize_bbox(bbox: List[float], width: int, height: int):
+def _normalize_bbox(bbox: List[float], width: int, height: int, expand_ratio: float = 0.0):
     if len(bbox) != 4:
         return None
 
     x1, y1, x2, y2 = [int(round(value)) for value in bbox]
+    box_width = max(0, x2 - x1)
+    box_height = max(0, y2 - y1)
+
+    if expand_ratio > 0 and box_width > 0 and box_height > 0:
+        pad_x = int(round(box_width * expand_ratio))
+        pad_y = int(round(box_height * expand_ratio))
+        x1 -= pad_x
+        y1 -= pad_y
+        x2 += pad_x
+        y2 += pad_y
+
     x1 = max(0, min(x1, width))
     y1 = max(0, min(y1, height))
     x2 = max(0, min(x2, width))
@@ -26,7 +37,8 @@ def _normalize_bbox(bbox: List[float], width: int, height: int):
     return x1, y1, x2, y2
 
 
-def attach_query_crops(image_path: str, detections: List[Dict], output_dir: str) -> List[Dict]:
+def attach_query_crops(image_path: str, detections: List[Dict], output_dir: str,
+                       expand_ratio: float = 0.0) -> List[Dict]:
     """
     Save per-detection crops and annotate detections with query image metadata.
     """
@@ -39,7 +51,7 @@ def attach_query_crops(image_path: str, detections: List[Dict], output_dir: str)
 
         for index, detection in enumerate(detections):
             updated_detection = dict(detection)
-            bbox = _normalize_bbox(updated_detection.get("bbox_xyxy", []), width, height)
+            bbox = _normalize_bbox(updated_detection.get("bbox_xyxy", []), width, height, expand_ratio=expand_ratio)
 
             if bbox is None:
                 updated_detection["query_image_path"] = ""
@@ -53,6 +65,7 @@ def attach_query_crops(image_path: str, detections: List[Dict], output_dir: str)
 
             updated_detection["query_image_path"] = str(crop_path)
             updated_detection["query_source"] = "crop"
+            updated_detection["query_bbox_xyxy"] = list(bbox)
             updated.append(updated_detection)
 
     return updated
@@ -62,10 +75,16 @@ def summarize_query_crops(detections: List[Dict]) -> Dict:
     total = len(detections)
     crop_ready = 0
     fallback_only = 0
+    expanded_crop_count = 0
 
     for detection in detections:
         if detection.get("query_image_path"):
             crop_ready += 1
+            if detection.get("query_bbox_xyxy"):
+                original_bbox = detection.get("bbox_xyxy", [])
+                query_bbox = detection.get("query_bbox_xyxy", [])
+                if len(original_bbox) == 4 and len(query_bbox) == 4 and query_bbox != original_bbox:
+                    expanded_crop_count += 1
         else:
             fallback_only += 1
 
@@ -73,4 +92,5 @@ def summarize_query_crops(detections: List[Dict]) -> Dict:
         "total_detections": total,
         "crop_ready": crop_ready,
         "fallback_only": fallback_only,
+        "expanded_crop_count": expanded_crop_count,
     }

@@ -19,9 +19,15 @@ def process_retail_detections(image_path: str, detections: List[Dict], sub_categ
     Run the catalog-matching portion of the retail experiment on detections.
     """
     index, embedder, index_status = get_runtime_index_components(runtime_config)
+    crop_expand_ratio = runtime_config.get("crop_expand_ratio", 0.0)
 
     with tempfile.TemporaryDirectory(prefix="retail_query_crops_") as crop_dir:
-        detections_with_queries = attach_query_crops(image_path, detections, crop_dir)
+        detections_with_queries = attach_query_crops(
+            image_path,
+            detections,
+            crop_dir,
+            expand_ratio=crop_expand_ratio,
+        )
         query_preparation = summarize_query_crops(detections_with_queries)
 
         enriched_instances = [
