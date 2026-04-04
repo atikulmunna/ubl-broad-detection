@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from utils.retail_embedding import create_embedder
 from utils.retail_evaluator import (
     append_benchmark_case,
+    evaluate_detection_proposals,
     evaluate_benchmark_cases,
     load_benchmark_cases,
     save_evaluation_report,
@@ -178,6 +179,47 @@ def test_validate_benchmark_cases_reports_length_mismatch(tmp_path: Path):
     assert "expected_instances count must match detections count" in issues[0]
 
 
+def test_validate_benchmark_cases_rejects_non_list_ground_truth(tmp_path: Path):
+    image_path = tmp_path / "scene.png"
+    image_path.write_bytes(b"x")
+    cases = [
+        {
+            "case_id": "bad_ground_truth",
+            "image_path": str(image_path),
+            "detections": [],
+            "expected_instances": [],
+            "ground_truth_instances": {"bbox_xyxy": [0, 0, 1, 1]},
+        }
+    ]
+
+    issues = validate_benchmark_cases(cases)
+
+    assert len(issues) == 1
+    assert "ground_truth_instances must be a list" in issues[0]
+
+
+def test_evaluate_detection_proposals_computes_tp_fp_fn():
+    metrics = evaluate_detection_proposals(
+        predictions=[
+            {"bbox_xyxy": [0, 0, 10, 10]},
+            {"bbox_xyxy": [20, 20, 30, 30]},
+        ],
+        ground_truth=[
+            {"bbox_xyxy": [0, 0, 10, 10]},
+            {"bbox_xyxy": [40, 40, 50, 50]},
+        ],
+        iou_threshold=0.5,
+    )
+
+    assert metrics["available"] is True
+    assert metrics["true_positives"] == 1
+    assert metrics["false_positives"] == 1
+    assert metrics["false_negatives"] == 1
+    assert metrics["precision"] == 0.5
+    assert metrics["recall"] == 0.5
+    assert metrics["mean_iou"] == 1.0
+
+
 def test_evaluate_benchmark_cases_supports_multi_product_summary_checks(tmp_path: Path):
     reset_runtime_index_cache()
 
@@ -267,6 +309,10 @@ def test_evaluate_benchmark_cases_supports_multi_product_summary_checks(tmp_path
                 "competitor_count": 1,
                 "unknown_count": 0,
             },
+            "ground_truth_instances": [
+                {"bbox_xyxy": [0, 0, 20, 20]},
+                {"bbox_xyxy": [20, 0, 40, 20]},
+            ],
         }
     ]
     runtime_config = {
@@ -281,8 +327,14 @@ def test_evaluate_benchmark_cases_supports_multi_product_summary_checks(tmp_path
     assert report["summary"]["passed_cases"] == 1
     assert report["summary"]["ubl_accuracy"] == 1.0
     assert report["summary"]["summary_accuracy"] == 1.0
+    assert report["summary"]["proposal_precision"] == 1.0
+    assert report["summary"]["proposal_recall"] == 1.0
+    assert report["summary"]["proposal_mean_iou"] == 1.0
     assert report["cases"][0]["summary_passed"] is True
     assert report["cases"][0]["summary_checks"]["ubl_count"] is True
+    assert report["cases"][0]["proposal_metrics"]["true_positives"] == 2
+    assert report["cases"][0]["proposal_metrics"]["false_positives"] == 0
+    assert report["cases"][0]["proposal_metrics"]["false_negatives"] == 0
 
 
 def test_append_benchmark_case_adds_to_manifest(tmp_path: Path):

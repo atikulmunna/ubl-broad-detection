@@ -64,6 +64,10 @@ def validate_benchmark_cases(cases: List[Dict]) -> List[str]:
         if expected_summary is not None and not isinstance(expected_summary, dict):
             issues.append(f"{case_id}: expected_summary must be an object when provided")
 
+        ground_truth_instances = case.get("ground_truth_instances")
+        if ground_truth_instances is not None and not isinstance(ground_truth_instances, list):
+            issues.append(f"{case_id}: ground_truth_instances must be a list when provided")
+
     return issues
 
 
@@ -76,11 +80,17 @@ def evaluate_benchmark_cases(cases: List[Dict], runtime_config: Dict, top_k_skus
     correct_ubl = 0
     passed_cases = 0
     passed_summaries = 0
+    total_detection_tp = 0
+    total_detection_fp = 0
+    total_detection_fn = 0
+    total_detection_iou = 0.0
+    total_detection_matches = 0
 
     for case in cases:
         case_name = case.get("case_id") or case.get("name") or f"case_{len(case_results) + 1}"
         expected_instances = case.get("expected_instances", [])
         expected_summary = case.get("expected_summary", {})
+        ground_truth_instances = case.get("ground_truth_instances", [])
 
         pipeline_result = process_retail_detections(
             image_path=case["image_path"],
@@ -118,6 +128,16 @@ def evaluate_benchmark_cases(cases: List[Dict], runtime_config: Dict, top_k_skus
         count_match = len(actual_instances) == len(expected_instances)
         summary_checks = _evaluate_summary_expectation(expected_summary, pipeline_result["summary_counts"])
         summary_passed = all(summary_checks.values()) if summary_checks else True
+        proposal_metrics = evaluate_detection_proposals(
+            predictions=case.get("detections", []),
+            ground_truth=ground_truth_instances,
+        )
+        if proposal_metrics["available"]:
+            total_detection_tp += proposal_metrics["true_positives"]
+            total_detection_fp += proposal_metrics["false_positives"]
+            total_detection_fn += proposal_metrics["false_negatives"]
+            total_detection_iou += proposal_metrics["matched_iou_sum"]
+            total_detection_matches += proposal_metrics["matched_count"]
         case_passed = count_match and all(item["passed"] for item in instance_checks) and summary_passed
         if case_passed:
             passed_cases += 1
@@ -133,6 +153,7 @@ def evaluate_benchmark_cases(cases: List[Dict], runtime_config: Dict, top_k_skus
             "instance_checks": instance_checks,
             "summary_checks": summary_checks,
             "summary_passed": summary_passed,
+            "proposal_metrics": _serialize_proposal_metrics(proposal_metrics),
             "summary_counts": pipeline_result["summary_counts"],
             "index_runtime": pipeline_result["index_runtime"],
             "query_preparation": pipeline_result["query_preparation"],
@@ -146,6 +167,7 @@ def evaluate_benchmark_cases(cases: List[Dict], runtime_config: Dict, top_k_skus
     ubl_expectations = sum(1 for case in cases for expected in case.get("expected_instances", [])
                            if "is_ubl" in expected)
     summary_expectations = sum(1 for case in cases if case.get("expected_summary"))
+    detection_cases = sum(1 for case in cases if case.get("ground_truth_instances"))
 
     return {
         "summary": {
@@ -159,6 +181,10 @@ def evaluate_benchmark_cases(cases: List[Dict], runtime_config: Dict, top_k_skus
             "recognition_accuracy": _safe_ratio(correct_recognition, recognition_expectations),
             "ubl_accuracy": _safe_ratio(correct_ubl, ubl_expectations),
             "summary_accuracy": _safe_ratio(passed_summaries, summary_expectations),
+            "detection_case_count": detection_cases,
+            "proposal_precision": _safe_ratio(total_detection_tp, total_detection_tp + total_detection_fp),
+            "proposal_recall": _safe_ratio(total_detection_tp, total_detection_tp + total_detection_fn),
+            "proposal_mean_iou": _safe_ratio(total_detection_iou, total_detection_matches),
         },
         "cases": case_results,
     }
@@ -192,6 +218,44 @@ def append_benchmark_case(benchmark_path: str, case: Dict) -> None:
         json.dump(payload, handle, indent=2)
 
 
+def evaluate_detection_proposals(predictions: List[Dict], ground_truth: List[Dict],
+                                 iou_threshold: float = 0.5) -> Dict:
+    if not ground_truth:
+        return {
+            "available": False,
+            "true_positives": 0,
+            "false_positives": 0,
+            "false_negatives": 0,
+            "precision": None,
+            "recall": None,
+            "mean_iou": None,
+            "matched_count": 0,
+            "matched_iou_sum": 0.0,
+        }
+
+    prediction_boxes = [item.get("bbox_xyxy", []) for item in predictions if len(item.get("bbox_xyxy", [])) == 4]
+    ground_truth_boxes = [item.get("bbox_xyxy", []) for item in ground_truth if len(item.get("bbox_xyxy", [])) == 4]
+
+    matches = _match_boxes(prediction_boxes, ground_truth_boxes, iou_threshold=iou_threshold)
+    matched_count = len(matches)
+    matched_iou_sum = sum(match["iou"] for match in matches)
+    true_positives = matched_count
+    false_positives = max(0, len(prediction_boxes) - matched_count)
+    false_negatives = max(0, len(ground_truth_boxes) - matched_count)
+
+    return {
+        "available": True,
+        "true_positives": true_positives,
+        "false_positives": false_positives,
+        "false_negatives": false_negatives,
+        "precision": _safe_ratio(true_positives, true_positives + false_positives),
+        "recall": _safe_ratio(true_positives, true_positives + false_negatives),
+        "mean_iou": _safe_ratio(matched_iou_sum, matched_count),
+        "matched_count": matched_count,
+        "matched_iou_sum": matched_iou_sum,
+    }
+
+
 def _evaluate_instance_expectation(expected: Dict, actual: Optional[Dict]) -> Dict[str, bool]:
     checks = {}
 
@@ -208,6 +272,62 @@ def _evaluate_summary_expectation(expected: Dict, actual: Dict) -> Dict[str, boo
         if field in expected:
             checks[field] = actual.get(field) == expected[field]
     return checks
+
+
+def _match_boxes(prediction_boxes: List[List[float]], ground_truth_boxes: List[List[float]],
+                 iou_threshold: float) -> List[Dict]:
+    candidate_pairs = []
+    for pred_index, pred_box in enumerate(prediction_boxes):
+        for gt_index, gt_box in enumerate(ground_truth_boxes):
+            iou = _calculate_iou(pred_box, gt_box)
+            if iou >= iou_threshold:
+                candidate_pairs.append({
+                    "pred_index": pred_index,
+                    "gt_index": gt_index,
+                    "iou": iou,
+                })
+
+    candidate_pairs.sort(key=lambda item: item["iou"], reverse=True)
+    used_predictions = set()
+    used_ground_truth = set()
+    matches = []
+
+    for pair in candidate_pairs:
+        if pair["pred_index"] in used_predictions or pair["gt_index"] in used_ground_truth:
+            continue
+        used_predictions.add(pair["pred_index"])
+        used_ground_truth.add(pair["gt_index"])
+        matches.append(pair)
+
+    return matches
+
+
+def _calculate_iou(box_a: List[float], box_b: List[float]) -> float:
+    ax1, ay1, ax2, ay2 = box_a
+    bx1, by1, bx2, by2 = box_b
+
+    inter_x1 = max(ax1, bx1)
+    inter_y1 = max(ay1, by1)
+    inter_x2 = min(ax2, bx2)
+    inter_y2 = min(ay2, by2)
+
+    inter_width = max(0.0, inter_x2 - inter_x1)
+    inter_height = max(0.0, inter_y2 - inter_y1)
+    inter_area = inter_width * inter_height
+
+    area_a = max(0.0, ax2 - ax1) * max(0.0, ay2 - ay1)
+    area_b = max(0.0, bx2 - bx1) * max(0.0, by2 - by1)
+    union_area = area_a + area_b - inter_area
+
+    if union_area <= 0:
+        return 0.0
+    return inter_area / union_area
+
+
+def _serialize_proposal_metrics(metrics: Dict) -> Dict:
+    result = dict(metrics)
+    result.pop("matched_iou_sum", None)
+    return result
 
 
 def _safe_ratio(numerator: int, denominator: int) -> Optional[float]:

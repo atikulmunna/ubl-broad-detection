@@ -20,6 +20,7 @@ The current goal is simple:
 - Create a case JSON from a shelf image:
   `python scripts/create_retail_case_template.py --image-path catalog\\evaluation\\images\\shelf_001.jpg --case-id shelf_001 --output-file catalog\\evaluation\\case_shelf_001.json --sub-category hair_care`
 - Add `detections`, `expected_instances`, and `expected_summary`
+- Add `ground_truth_instances` if you want proposal recall/precision and mean IoU metrics
 - Render a preview while labeling:
   `python scripts/render_retail_case_preview.py --case-file catalog\\evaluation\\case_shelf_001.json --output-file catalog\\evaluation\\previews\\shelf_001.png`
 - Evaluate all cases listed in `catalog/evaluation/sample_benchmark.json`:
@@ -30,3 +31,4 @@ The current goal is simple:
 - `catalog/evaluation/images/` is for multi-product shelf photos
 - `catalog/references/` is only for optional single-product reference images
 - `catalog/evaluation/case_template.json` shows the expected shape of a shelf case
+- proposal metrics use IoU matching between `detections` and `ground_truth_instances`
