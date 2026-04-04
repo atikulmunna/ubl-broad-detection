@@ -1,60 +1,32 @@
 # UBL Broad Detection
 
-Experimental retail detection workspace for broad product discovery across UBL and non-UBL items.
+Lean experiment repo for shelf-level product detection and benchmarking.
 
-This repository was split from the `labs` branch of the original `UBL-standalone` project so we can explore catalog-first retail detection, open-set recognition, and future SAM-assisted product proposal work without touching the production repo.
+The current goal is simple:
+- detect product instances on dense retail shelves
+- benchmark proposal quality on real shelf images
+- keep later UBL/non-UBL classification as a separate stage
 
-## Focus
+## Scope
 
-- broad retail product detection
-- catalog-aware brand and SKU recognition
-- reduced dependence on repeated annotation for new product launches
-- safe experimentation outside the production codebase
+- shelf-image benchmark tooling
+- crop/query preparation
+- catalog and reference helpers for later matching experiments
+- a lightweight retail experiment path kept separate from production code
 
-## Origin
+## Evaluation Workflow
 
-Original repository:
-
-- https://github.com/Yok4ai/UBL-standalone
-
-This repo starts from the `labs` branch snapshot plus the early `retail_experiment` scaffolding.
-
-## Current State
-
-- existing UBL retail pipeline copied from the source repo
-- experimental catalog metadata in `config/standards/retail_catalog.yaml`
-- experimental analyzer path for `retail_experiment`
-- roadmap in `docs/plans/2026-03-31-retail-catalog-roadmap.md`
-
-## Catalog Workflow
-
-- Put product reference images under `catalog/references/<product_id>/`
-- Or declare `reference_images` directly in `config/standards/retail_catalog.yaml`
-- Audit readiness with:
-  `python scripts/build_retail_index.py --audit-only`
-- Write an onboarding JSON report with:
-  `python scripts/build_retail_index.py --audit-only --report-file catalog/index/onboarding-report.json`
-- Build the local index with:
-  `python scripts/build_retail_index.py`
-
-## Small-Batch Evaluation
-
-- Put a few benchmark cases in `catalog/evaluation/sample_benchmark.json`
-- Put full shelf images under `catalog/evaluation/images/`
-- Each case should point to a real shelf image, the detections you want to test, and expected outputs
-- Relative image paths in the manifest are resolved from the manifest folder
-- To scaffold a single-case JSON from a shelf image:
+- Put shelf images under `catalog/evaluation/images/`
+- Create a case JSON from a shelf image:
   `python scripts/create_retail_case_template.py --image-path catalog\\evaluation\\images\\shelf_001.jpg --case-id shelf_001 --output-file catalog\\evaluation\\case_shelf_001.json --sub-category hair_care`
-- To render a labeled preview while annotating:
+- Add `detections`, `expected_instances`, and `expected_summary`
+- Render a preview while labeling:
   `python scripts/render_retail_case_preview.py --case-file catalog\\evaluation\\case_shelf_001.json --output-file catalog\\evaluation\\previews\\shelf_001.png`
-- Run:
+- Evaluate all cases listed in `catalog/evaluation/sample_benchmark.json`:
   `python scripts/evaluate_retail_benchmark.py`
-- The latest report is written to:
-  `catalog/evaluation/latest_report.json`
-- A case can contain many detections from one shelf image
-- `expected_summary` can be used to check shelf-level counts such as `ubl_count`, `competitor_count`, and `unknown_count`
-- `catalog/references/` is for single-product reference images only
-- To append one quick single-detection case from the command line:
-  `python scripts/add_retail_benchmark_case.py --case-id demo --image-path images\\shelf_01.jpg --sub-category hair_care --bbox 0,0,64,64 --expected-brand dove --expected-recognition brand_known`
-- To append a full multi-product shelf case from JSON:
-  `python scripts/add_retail_benchmark_case.py --case-json catalog\\evaluation\\case_mixed_shelf.json`
+
+## Notes
+
+- `catalog/evaluation/images/` is for multi-product shelf photos
+- `catalog/references/` is only for optional single-product reference images
+- `catalog/evaluation/case_template.json` shows the expected shape of a shelf case
