@@ -15,6 +15,11 @@ pyyaml>=6.0
 python-dotenv>=1.0.0
 scikit-learn>=1.7.2
 
+# Optional proposer dependencies
+# transformers>=4.46.0
+# accelerate>=1.0.0
+# sahi>=0.11.20
+
 # FOR MACBOOK (only for local test)
 # boto3==1.29.7
 # torch>=2.0.0

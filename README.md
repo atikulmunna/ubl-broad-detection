@@ -37,4 +37,6 @@ The current goal is simple:
 - `catalog/references/` is only for optional single-product reference images
 - `catalog/evaluation/case_template.json` shows the expected shape of a shelf case
 - proposal metrics use IoU matching between `detections` and `ground_truth_instances`
-- `grounding_dino_sahi` is scaffolded now as the first foundation-model proposer target
+- `grounding_dino_sahi` now has an optional real inference path through Hugging Face `transformers`
+- sliced inference is built in so the benchmark path can use SAHI-style windowing even before adding the external SAHI package
+- to activate real Grounding DINO inference, install the optional proposer dependencies first
