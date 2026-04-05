@@ -85,6 +85,7 @@ catalog/index/*
 !catalog/index/.gitkeep
 catalog/evaluation/latest_report.json
 catalog/evaluation/images/
+dataset/
 
 *.agent.md
 copilot-instructions.md

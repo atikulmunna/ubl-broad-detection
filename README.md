@@ -28,6 +28,8 @@ The current goal is simple:
   `python scripts/render_retail_case_preview.py --case-file catalog\\evaluation\\case_shelf_001.json --output-file catalog\\evaluation\\previews\\shelf_001.png`
 - Evaluate all cases listed in `catalog/evaluation/sample_benchmark.json`:
   `python scripts/evaluate_retail_benchmark.py`
+- Evaluate a proposer against imported benchmark cases:
+  `python scripts/evaluate_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_test.json --proposer-type grounding_dino_sahi`
 
 ## Notes
 
@@ -35,3 +37,4 @@ The current goal is simple:
 - `catalog/references/` is only for optional single-product reference images
 - `catalog/evaluation/case_template.json` shows the expected shape of a shelf case
 - proposal metrics use IoU matching between `detections` and `ground_truth_instances`
+- `grounding_dino_sahi` is scaffolded now as the first foundation-model proposer target
