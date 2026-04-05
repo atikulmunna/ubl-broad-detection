@@ -17,8 +17,11 @@ The current goal is simple:
 ## Evaluation Workflow
 
 - Put shelf images under `catalog/evaluation/images/`
+- COCO one-class shelf datasets can be imported into benchmark cases
 - Create a case JSON from a shelf image:
   `python scripts/create_retail_case_template.py --image-path catalog\\evaluation\\images\\shelf_001.jpg --case-id shelf_001 --output-file catalog\\evaluation\\case_shelf_001.json --sub-category hair_care`
+- Import a COCO split into a benchmark manifest:
+  `python scripts/import_retail_coco.py --annotation-file "dataset\\...\\test\\_annotations.coco.json" --images-dir "dataset\\...\\test" --output-file catalog\\evaluation\\imported_test.json --sub-category hair_care`
 - Add `detections`, `expected_instances`, and `expected_summary`
 - Add `ground_truth_instances` if you want proposal recall/precision and mean IoU metrics
 - Render a preview while labeling:
