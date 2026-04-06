@@ -18,8 +18,14 @@ def main():
     parser.add_argument("--caption", default="product")
     parser.add_argument("--caption-candidate", action="append", default=[])
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
+    parser.add_argument("--model-id", default="IDEA-Research/grounding-dino-tiny")
     parser.add_argument("--slice-size", type=int, default=640)
     parser.add_argument("--slice-overlap-ratio", type=float, default=0.2)
+    parser.add_argument("--box-threshold", type=float, default=0.25)
+    parser.add_argument("--text-threshold", type=float, default=0.25)
+    parser.add_argument("--nms-iou-threshold", type=float, default=0.5)
+    parser.add_argument("--min-box-area-ratio", type=float, default=0.0)
+    parser.add_argument("--max-box-area-ratio", type=float, default=1.0)
     parser.add_argument("--iou-threshold", type=float, default=0.5)
     args = parser.parse_args()
 
@@ -35,8 +41,14 @@ def main():
             "caption": args.caption,
             "captions": args.caption_candidate or None,
             "device": args.device,
+            "model_id": args.model_id,
             "slice_size": args.slice_size,
             "slice_overlap_ratio": args.slice_overlap_ratio,
+            "box_threshold": args.box_threshold,
+            "text_threshold": args.text_threshold,
+            "nms_iou_threshold": args.nms_iou_threshold,
+            "min_box_area_ratio": args.min_box_area_ratio,
+            "max_box_area_ratio": args.max_box_area_ratio,
         },
         iou_threshold=args.iou_threshold,
     )

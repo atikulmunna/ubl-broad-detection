@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.retail_proposer import run_product_proposer
-from utils.retail_proposer import _resolve_captions, generate_image_slices, non_max_suppression
+from utils.retail_proposer import _box_area_ratio, _resolve_captions, generate_image_slices, non_max_suppression
 from utils.retail_proposer_benchmark import evaluate_proposer_on_cases
 
 
@@ -50,6 +50,12 @@ def test_resolve_captions_normalizes_and_deduplicates():
     assert captions == ["product.", "products."]
 
 
+def test_box_area_ratio_uses_full_image_area():
+    ratio = _box_area_ratio([0, 0, 10, 20], image_area=1000)
+
+    assert ratio == 0.2
+
+
 def test_generate_image_slices_covers_image_with_overlap():
     slices = generate_image_slices((1000, 800), slice_size=400, overlap_ratio=0.25)
 
@@ -71,6 +77,21 @@ def test_non_max_suppression_keeps_best_box():
     assert len(kept) == 2
     assert kept[0]["confidence"] == 0.9
     assert kept[1]["confidence"] == 0.7
+
+
+def test_run_product_proposer_reports_area_filters_in_stub_runtime():
+    result = run_product_proposer(
+        image_path="demo.jpg",
+        proposer_config={
+            "proposer_type": "grounding_dino_sahi",
+            "device": "cpu",
+            "min_box_area_ratio": 0.001,
+            "max_box_area_ratio": 0.2,
+        },
+    )
+
+    assert result["runtime"]["min_box_area_ratio"] == 0.001
+    assert result["runtime"]["max_box_area_ratio"] == 0.2
 
 
 def test_evaluate_proposer_on_cases_scores_mock_predictions():

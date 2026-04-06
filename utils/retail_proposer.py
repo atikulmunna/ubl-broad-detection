@@ -33,6 +33,8 @@ def run_product_proposer(image_path: str, proposer_config: Dict) -> Dict:
 
 def _run_grounding_dino_sahi(image_path: str, proposer_config: Dict) -> Dict:
     captions = _resolve_captions(proposer_config)
+    min_box_area_ratio = float(proposer_config.get("min_box_area_ratio", 0.0))
+    max_box_area_ratio = float(proposer_config.get("max_box_area_ratio", 1.0))
     dependency_status = _grounding_dino_dependency_status()
     runtime = {
         "available": dependency_status["available"],
@@ -45,6 +47,8 @@ def _run_grounding_dino_sahi(image_path: str, proposer_config: Dict) -> Dict:
         "slice_overlap_ratio": proposer_config.get("slice_overlap_ratio", 0.2),
         "model_id": proposer_config.get("model_id", "IDEA-Research/grounding-dino-tiny"),
         "requested_device": proposer_config.get("device", "auto"),
+        "min_box_area_ratio": min_box_area_ratio,
+        "max_box_area_ratio": max_box_area_ratio,
         "backend": "transformers + sliced inference",
     }
 
@@ -93,11 +97,16 @@ def _infer_grounding_dino_slices(image_path: str, proposer_config: Dict):
     box_threshold = float(proposer_config.get("box_threshold", 0.25))
     text_threshold = float(proposer_config.get("text_threshold", 0.25))
     nms_iou_threshold = float(proposer_config.get("nms_iou_threshold", 0.5))
+    min_box_area_ratio = float(proposer_config.get("min_box_area_ratio", 0.0))
+    max_box_area_ratio = float(proposer_config.get("max_box_area_ratio", 1.0))
 
     with Image.open(image_path).convert("RGB") as image:
+        image_area = float(image.width * image.height)
         slices = generate_image_slices(image.size, slice_size=slice_size, overlap_ratio=slice_overlap_ratio)
         detections = []
         per_caption_counts = {}
+        filtered_small = 0
+        filtered_large = 0
 
         for caption in captions:
             caption_count = 0
@@ -119,7 +128,7 @@ def _infer_grounding_dino_slices(image_path: str, proposer_config: Dict):
 
                 for box, score, label in zip(results["boxes"], results["scores"], results["labels"]):
                     x1, y1, x2, y2 = [float(value) for value in box.tolist()]
-                    detections.append({
+                    detection = {
                         "bbox_xyxy": [
                             int(round(x1 + slice_region["x1"])),
                             int(round(y1 + slice_region["y1"])),
@@ -130,7 +139,16 @@ def _infer_grounding_dino_slices(image_path: str, proposer_config: Dict):
                         "label": str(label),
                         "caption": caption,
                         "source": "grounding_dino_sahi",
-                    })
+                    }
+                    area_ratio = _box_area_ratio(detection["bbox_xyxy"], image_area)
+                    if area_ratio < min_box_area_ratio:
+                        filtered_small += 1
+                        continue
+                    if area_ratio > max_box_area_ratio:
+                        filtered_large += 1
+                        continue
+
+                    detections.append(detection)
                     caption_count += 1
             per_caption_counts[caption] = caption_count
 
@@ -142,6 +160,8 @@ def _infer_grounding_dino_slices(image_path: str, proposer_config: Dict):
         "slice_count": len(slices),
         "raw_detection_count": len(detections),
         "merged_detection_count": len(merged),
+        "filtered_small_count": filtered_small,
+        "filtered_large_count": filtered_large,
         "box_threshold": box_threshold,
         "text_threshold": text_threshold,
         "nms_iou_threshold": nms_iou_threshold,
@@ -213,6 +233,16 @@ def _calculate_iou(box_a: List[float], box_b: List[float]) -> float:
     if union <= 0:
         return 0.0
     return inter_area / union
+
+
+def _box_area_ratio(bbox_xyxy: List[float], image_area: float) -> float:
+    if image_area <= 0 or len(bbox_xyxy) != 4:
+        return 0.0
+
+    x1, y1, x2, y2 = bbox_xyxy
+    width = max(0.0, x2 - x1)
+    height = max(0.0, y2 - y1)
+    return (width * height) / image_area
 
 
 def _resolve_captions(proposer_config: Dict) -> List[str]:

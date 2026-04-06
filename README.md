@@ -34,6 +34,8 @@ The current goal is simple:
   `python scripts/evaluate_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_test.json --proposer-type grounding_dino_sahi`
 - Sweep multiple product prompts in one run:
   `python scripts/evaluate_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --proposer-type grounding_dino_sahi --device cpu --caption-candidate "product" --caption-candidate "products" --caption-candidate "bottle" --caption-candidate "package"`
+- Tune thresholds, model choice, and simple area filters from the CLI:
+  `python scripts/evaluate_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --proposer-type grounding_dino_sahi --device cpu --model-id IDEA-Research/grounding-dino-tiny --box-threshold 0.2 --text-threshold 0.15 --nms-iou-threshold 0.4 --min-box-area-ratio 0.00005 --max-box-area-ratio 0.08`
 
 ## Notes
 
@@ -43,5 +45,6 @@ The current goal is simple:
 - proposal metrics use IoU matching between `detections` and `ground_truth_instances`
 - `grounding_dino_sahi` now has an optional real inference path through Hugging Face `transformers`
 - repeated `--caption-candidate` values are normalized and merged with NMS, which makes prompt tuning easier on dense shelves
+- the proposer CLI now exposes model, threshold, NMS, and box-area knobs so dense-shelf tuning does not require code changes
 - sliced inference is built in so the benchmark path can use SAHI-style windowing even before adding the external SAHI package
 - to activate real Grounding DINO inference, install the optional proposer dependencies first
