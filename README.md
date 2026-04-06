@@ -22,6 +22,8 @@ The current goal is simple:
   `python scripts/create_retail_case_template.py --image-path catalog\\evaluation\\images\\shelf_001.jpg --case-id shelf_001 --output-file catalog\\evaluation\\case_shelf_001.json --sub-category hair_care`
 - Import a COCO split into a benchmark manifest:
   `python scripts/import_retail_coco.py --annotation-file "dataset\\...\\test\\_annotations.coco.json" --images-dir "dataset\\...\\test" --output-file catalog\\evaluation\\imported_test.json --sub-category hair_care`
+- For dense-shelf evaluation, prefer importing the most heavily annotated cases first:
+  `python scripts/import_retail_coco.py --annotation-file "dataset\\...\\test\\_annotations.coco.json" --images-dir "dataset\\...\\test" --output-file catalog\\evaluation\\imported_dense_test.json --sub-category hair_care --sort-by-density --min-ground-truth 10 --limit 10`
 - Add `detections`, `expected_instances`, and `expected_summary`
 - Add `ground_truth_instances` if you want proposal recall/precision and mean IoU metrics
 - Render a preview while labeling:
@@ -30,6 +32,8 @@ The current goal is simple:
   `python scripts/evaluate_retail_benchmark.py`
 - Evaluate a proposer against imported benchmark cases:
   `python scripts/evaluate_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_test.json --proposer-type grounding_dino_sahi`
+- Sweep multiple product prompts in one run:
+  `python scripts/evaluate_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --proposer-type grounding_dino_sahi --device cpu --caption-candidate "product" --caption-candidate "products" --caption-candidate "bottle" --caption-candidate "package"`
 
 ## Notes
 
@@ -38,5 +42,6 @@ The current goal is simple:
 - `catalog/evaluation/case_template.json` shows the expected shape of a shelf case
 - proposal metrics use IoU matching between `detections` and `ground_truth_instances`
 - `grounding_dino_sahi` now has an optional real inference path through Hugging Face `transformers`
+- repeated `--caption-candidate` values are normalized and merged with NMS, which makes prompt tuning easier on dense shelves
 - sliced inference is built in so the benchmark path can use SAHI-style windowing even before adding the external SAHI package
 - to activate real Grounding DINO inference, install the optional proposer dependencies first

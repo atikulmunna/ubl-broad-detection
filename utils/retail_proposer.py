@@ -32,16 +32,19 @@ def run_product_proposer(image_path: str, proposer_config: Dict) -> Dict:
 
 
 def _run_grounding_dino_sahi(image_path: str, proposer_config: Dict) -> Dict:
+    captions = _resolve_captions(proposer_config)
     dependency_status = _grounding_dino_dependency_status()
     runtime = {
         "available": dependency_status["available"],
         "mode": "real" if dependency_status["available"] else "missing_dependencies",
         "reason": dependency_status.get("reason", ""),
         "image_path": str(Path(image_path)),
-        "caption": proposer_config.get("caption", "product"),
+        "caption": captions[0],
+        "captions": captions,
         "slice_size": proposer_config.get("slice_size", 640),
         "slice_overlap_ratio": proposer_config.get("slice_overlap_ratio", 0.2),
         "model_id": proposer_config.get("model_id", "IDEA-Research/grounding-dino-tiny"),
+        "requested_device": proposer_config.get("device", "auto"),
         "backend": "transformers + sliced inference",
     }
 
@@ -81,9 +84,10 @@ def _grounding_dino_dependency_status() -> Dict:
 def _infer_grounding_dino_slices(image_path: str, proposer_config: Dict):
     torch = _import_torch()
     processor, model, device = _get_grounding_dino_backend(
-        proposer_config.get("model_id", "IDEA-Research/grounding-dino-tiny")
+        proposer_config.get("model_id", "IDEA-Research/grounding-dino-tiny"),
+        proposer_config.get("device", "auto"),
     )
-    caption = proposer_config.get("caption", "product")
+    captions = _resolve_captions(proposer_config)
     slice_size = int(proposer_config.get("slice_size", 640))
     slice_overlap_ratio = float(proposer_config.get("slice_overlap_ratio", 0.2))
     box_threshold = float(proposer_config.get("box_threshold", 0.25))
@@ -93,40 +97,48 @@ def _infer_grounding_dino_slices(image_path: str, proposer_config: Dict):
     with Image.open(image_path).convert("RGB") as image:
         slices = generate_image_slices(image.size, slice_size=slice_size, overlap_ratio=slice_overlap_ratio)
         detections = []
+        per_caption_counts = {}
 
-        for slice_region in slices:
-            crop = image.crop((slice_region["x1"], slice_region["y1"], slice_region["x2"], slice_region["y2"]))
-            inputs = processor(images=crop, text=caption, return_tensors="pt")
-            inputs = {key: value.to(device) if hasattr(value, "to") else value for key, value in inputs.items()}
+        for caption in captions:
+            caption_count = 0
+            for slice_region in slices:
+                crop = image.crop((slice_region["x1"], slice_region["y1"], slice_region["x2"], slice_region["y2"]))
+                inputs = processor(images=crop, text=caption, return_tensors="pt")
+                inputs = {key: value.to(device) if hasattr(value, "to") else value for key, value in inputs.items()}
 
-            with torch.no_grad():
-                outputs = model(**inputs)
+                with torch.no_grad():
+                    outputs = model(**inputs)
 
-            results = processor.post_process_grounded_object_detection(
-                outputs,
-                inputs["input_ids"],
-                threshold=box_threshold,
-                text_threshold=text_threshold,
-                target_sizes=[(crop.height, crop.width)],
-            )[0]
+                results = processor.post_process_grounded_object_detection(
+                    outputs,
+                    inputs["input_ids"],
+                    threshold=box_threshold,
+                    text_threshold=text_threshold,
+                    target_sizes=[(crop.height, crop.width)],
+                )[0]
 
-            for box, score, label in zip(results["boxes"], results["scores"], results["labels"]):
-                x1, y1, x2, y2 = [float(value) for value in box.tolist()]
-                detections.append({
-                    "bbox_xyxy": [
-                        int(round(x1 + slice_region["x1"])),
-                        int(round(y1 + slice_region["y1"])),
-                        int(round(x2 + slice_region["x1"])),
-                        int(round(y2 + slice_region["y1"])),
-                    ],
-                    "confidence": round(float(score), 4),
-                    "label": str(label),
-                    "source": "grounding_dino_sahi",
-                })
+                for box, score, label in zip(results["boxes"], results["scores"], results["labels"]):
+                    x1, y1, x2, y2 = [float(value) for value in box.tolist()]
+                    detections.append({
+                        "bbox_xyxy": [
+                            int(round(x1 + slice_region["x1"])),
+                            int(round(y1 + slice_region["y1"])),
+                            int(round(x2 + slice_region["x1"])),
+                            int(round(y2 + slice_region["y1"])),
+                        ],
+                        "confidence": round(float(score), 4),
+                        "label": str(label),
+                        "caption": caption,
+                        "source": "grounding_dino_sahi",
+                    })
+                    caption_count += 1
+            per_caption_counts[caption] = caption_count
 
     merged = non_max_suppression(detections, iou_threshold=nms_iou_threshold)
     runtime = {
         "device": device,
+        "caption_count": len(captions),
+        "per_caption_detection_count": per_caption_counts,
         "slice_count": len(slices),
         "raw_detection_count": len(detections),
         "merged_detection_count": len(merged),
@@ -203,9 +215,39 @@ def _calculate_iou(box_a: List[float], box_b: List[float]) -> float:
     return inter_area / union
 
 
-def _get_grounding_dino_backend(model_id: str):
+def _resolve_captions(proposer_config: Dict) -> List[str]:
+    captions = proposer_config.get("captions")
+    if captions is None:
+        captions = [proposer_config.get("caption", "product")]
+    elif not isinstance(captions, list):
+        captions = [captions]
+
+    normalized = []
+    seen = set()
+    for caption in captions:
+        if caption is None:
+            continue
+        text = str(caption).strip()
+        if not text:
+            continue
+        if text[-1] not in ".!?":
+            text = f"{text}."
+        if text not in seen:
+            normalized.append(text)
+            seen.add(text)
+
+    if not normalized:
+        normalized.append("product.")
+    return normalized
+
+
+def _get_grounding_dino_backend(model_id: str, requested_device: str = "auto"):
     global _GROUNDING_DINO_BACKEND
-    if _GROUNDING_DINO_BACKEND and _GROUNDING_DINO_BACKEND["model_id"] == model_id:
+    if (
+        _GROUNDING_DINO_BACKEND
+        and _GROUNDING_DINO_BACKEND["model_id"] == model_id
+        and _GROUNDING_DINO_BACKEND["requested_device"] == requested_device
+    ):
         return (
             _GROUNDING_DINO_BACKEND["processor"],
             _GROUNDING_DINO_BACKEND["model"],
@@ -215,7 +257,12 @@ def _get_grounding_dino_backend(model_id: str):
     from transformers import AutoModelForZeroShotObjectDetection, AutoProcessor
     torch = _import_torch()
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if requested_device == "cpu":
+        device = "cpu"
+    elif requested_device == "cuda":
+        device = "cuda"
+    else:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
     processor = AutoProcessor.from_pretrained(model_id)
     model = AutoModelForZeroShotObjectDetection.from_pretrained(model_id)
     model.to(device)
@@ -223,6 +270,7 @@ def _get_grounding_dino_backend(model_id: str):
 
     _GROUNDING_DINO_BACKEND = {
         "model_id": model_id,
+        "requested_device": requested_device,
         "processor": processor,
         "model": model,
         "device": device,

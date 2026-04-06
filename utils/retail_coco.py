@@ -22,7 +22,8 @@ def load_coco_annotations(annotation_path: str) -> Dict:
 
 
 def build_cases_from_coco(annotation_path: str, images_dir: str, sub_category: str = "unknown",
-                          limit: Optional[int] = None, include_segmentation: bool = True) -> List[Dict]:
+                          limit: Optional[int] = None, include_segmentation: bool = True,
+                          min_ground_truth: int = 0, sort_by_density: bool = False) -> List[Dict]:
     payload = load_coco_annotations(annotation_path)
     images_root = Path(images_dir).resolve()
 
@@ -32,8 +33,15 @@ def build_cases_from_coco(annotation_path: str, images_dir: str, sub_category: s
     for annotation in annotations:
         annotations_by_image[annotation.get("image_id")].append(annotation)
 
+    image_records = list(images)
+    if sort_by_density:
+        image_records.sort(
+            key=lambda item: len(annotations_by_image.get(item.get("id"), [])),
+            reverse=True,
+        )
+
     cases = []
-    for image_record in images:
+    for image_record in image_records:
         image_id = image_record.get("id")
         image_path = images_root / image_record["file_name"]
         ground_truth_instances = []
@@ -50,6 +58,10 @@ def build_cases_from_coco(annotation_path: str, images_dir: str, sub_category: s
                 ground_truth["segmentation"] = annotation["segmentation"]
             ground_truth_instances.append(ground_truth)
 
+        annotation_count = len(ground_truth_instances)
+        if annotation_count < min_ground_truth:
+            continue
+
         case = {
             "case_id": _case_id_from_image(image_record),
             "image_path": str(image_path),
@@ -61,6 +73,7 @@ def build_cases_from_coco(annotation_path: str, images_dir: str, sub_category: s
             "detections": [],
             "ground_truth_instances": ground_truth_instances,
             "expected_instances": [],
+            "ground_truth_count": annotation_count,
         }
         cases.append(case)
 

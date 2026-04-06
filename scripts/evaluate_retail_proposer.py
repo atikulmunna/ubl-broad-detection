@@ -16,6 +16,8 @@ def main():
     parser.add_argument("--output-file", default="catalog/evaluation/proposer_report.json")
     parser.add_argument("--proposer-type", default="grounding_dino_sahi")
     parser.add_argument("--caption", default="product")
+    parser.add_argument("--caption-candidate", action="append", default=[])
+    parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     parser.add_argument("--slice-size", type=int, default=640)
     parser.add_argument("--slice-overlap-ratio", type=float, default=0.2)
     parser.add_argument("--iou-threshold", type=float, default=0.5)
@@ -31,6 +33,8 @@ def main():
         proposer_config={
             "proposer_type": args.proposer_type,
             "caption": args.caption,
+            "captions": args.caption_candidate or None,
+            "device": args.device,
             "slice_size": args.slice_size,
             "slice_overlap_ratio": args.slice_overlap_ratio,
         },

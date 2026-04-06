@@ -14,6 +14,8 @@ def main():
     parser.add_argument("--output-file", required=True)
     parser.add_argument("--sub-category", default="unknown")
     parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument("--min-ground-truth", type=int, default=0)
+    parser.add_argument("--sort-by-density", action="store_true")
     args = parser.parse_args()
 
     cases = build_cases_from_coco(
@@ -21,6 +23,8 @@ def main():
         images_dir=args.images_dir,
         sub_category=args.sub_category,
         limit=args.limit or None,
+        min_ground_truth=args.min_ground_truth,
+        sort_by_density=args.sort_by_density,
     )
     save_benchmark_manifest(cases, args.output_file)
     print(f"Wrote {len(cases)} cases to {args.output_file}")

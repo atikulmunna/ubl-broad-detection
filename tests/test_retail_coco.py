@@ -71,6 +71,21 @@ def test_build_cases_from_coco_honors_limit(tmp_path: Path):
     assert len(cases) == 1
 
 
+def test_build_cases_from_coco_can_sort_by_density_and_filter_sparse_cases(tmp_path: Path):
+    annotation_path, images_dir = _write_coco_fixture(tmp_path)
+
+    cases = build_cases_from_coco(
+        annotation_path=str(annotation_path),
+        images_dir=str(images_dir),
+        min_ground_truth=2,
+        sort_by_density=True,
+    )
+
+    assert len(cases) == 1
+    assert cases[0]["case_id"] == "shelf_a"
+    assert cases[0]["ground_truth_count"] == 2
+
+
 def test_save_benchmark_manifest_writes_cases(tmp_path: Path):
     output_path = tmp_path / "benchmark.json"
     save_benchmark_manifest([{"case_id": "one"}], str(output_path))

@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.retail_proposer import run_product_proposer
-from utils.retail_proposer import generate_image_slices, non_max_suppression
+from utils.retail_proposer import _resolve_captions, generate_image_slices, non_max_suppression
 from utils.retail_proposer_benchmark import evaluate_proposer_on_cases
 
 
@@ -27,6 +27,7 @@ def test_run_product_proposer_returns_stub_for_grounding_dino_sahi():
         proposer_config={
             "proposer_type": "grounding_dino_sahi",
             "caption": "product",
+            "device": "cpu",
             "slice_size": 512,
             "slice_overlap_ratio": 0.25,
         },
@@ -34,8 +35,19 @@ def test_run_product_proposer_returns_stub_for_grounding_dino_sahi():
 
     assert result["runtime"]["available"] is False
     assert result["runtime"]["mode"] == "missing_dependencies"
-    assert result["runtime"]["caption"] == "product"
+    assert result["runtime"]["caption"] == "product."
+    assert result["runtime"]["captions"] == ["product."]
+    assert result["runtime"]["requested_device"] == "cpu"
     assert result["runtime"]["reason"]
+
+
+def test_resolve_captions_normalizes_and_deduplicates():
+    captions = _resolve_captions({
+        "caption": "ignored",
+        "captions": ["product", " products. ", "", "product"],
+    })
+
+    assert captions == ["product.", "products."]
 
 
 def test_generate_image_slices_covers_image_with_overlap():
