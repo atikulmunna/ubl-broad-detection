@@ -1,0 +1,31 @@
+{
+  "config": {
+    "proposer_type": "grounding_dino_sam3",
+    "device": "cuda",
+    "slice_size": 640,
+    "slice_overlap_ratio": 0.2,
+    "model_id": "IDEA-Research/grounding-dino-base",
+    "captions": [
+      "product",
+      "products"
+    ],
+    "box_threshold": 0.15,
+    "text_threshold": 0.1,
+    "nms_iou_threshold": 0.4,
+    "min_box_area_ratio": 5e-05,
+    "max_box_area_ratio": 0.08,
+    "containment_ratio_threshold": 0.85,
+    "containment_score_ratio_threshold": 0.75,
+    "sam3_model_id": "facebook/sam3",
+    "sam3_mask_threshold": 0.0,
+    "sam3_score_threshold": 0.2,
+    "sam3_max_refine_boxes": 48,
+    "sam3_box_iou_threshold": 0.0
+  },
+  "summary": {
+    "average_detection_count": 32.0,
+    "average_retention_ratio": 0.6531,
+    "image_count": 1,
+    "notes": "Best run from the first local SAM3 tuning sweep on one shelf image."
+  }
+}

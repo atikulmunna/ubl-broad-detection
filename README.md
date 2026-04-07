@@ -46,6 +46,10 @@ The current goal is simple:
   `python scripts/infer_retail_images.py --image-dir catalog\\evaluation\\images --limit 3 --config-file config\\proposer\\grounding_dino_category_specific.json --output-dir outputs\\inference_category`
 - Start a refinement experiment with Grounding DINO proposals and SAM 3 box prompts:
   `python scripts/infer_retail_images.py --image-dir catalog\\evaluation\\images --limit 3 --config-file config\\proposer\\grounding_dino_sam3_experiment.json --output-dir outputs\\inference_sam3`
+- Tune SAM3 refinement settings on one or more images:
+  `python scripts/tune_retail_sam3.py --image-dir catalog\\evaluation\\images --limit 1 --config-file config\\proposer\\grounding_dino_sam3_experiment.json --output-dir outputs\\sam3_tuning`
+- Use the first tuned SAM3 config directly:
+  `python scripts/infer_retail_images.py --image-dir catalog\\evaluation\\images --limit 1 --config-file config\\proposer\\grounding_dino_sam3_tuned.json --output-dir outputs\\inference_sam3_tuned`
 - On RTX 50-series GPUs, use a CUDA-capable PyTorch env before running real proposer inference:
   `pip install --upgrade --index-url https://download.pytorch.org/whl/cu130 torch torchvision torchaudio`
 
