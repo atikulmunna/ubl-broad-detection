@@ -42,6 +42,8 @@ The current goal is simple:
   `python scripts/sweep_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --device cuda --model-id IDEA-Research/grounding-dino-tiny --caption-set "product|products|bottle|container" --box-threshold 0.15 --text-threshold 0.1 --nms-iou-threshold 0.4 --min-box-area-ratio 0.00005 --max-box-area-ratio 0.08 --best-config-file config\\proposer\\grounding_dino_sahi_baseline.json`
 - Run inference on a few shelf images and save preview overlays:
   `python scripts/infer_retail_images.py --image-dir catalog\\evaluation\\images --limit 3 --config-file config\\proposer\\grounding_dino_sahi_baseline.json --output-dir outputs\\inference`
+- Try a category-specific prompt set:
+  `python scripts/infer_retail_images.py --image-dir catalog\\evaluation\\images --limit 3 --config-file config\\proposer\\grounding_dino_category_specific.json --output-dir outputs\\inference_category`
 - Start a refinement experiment with Grounding DINO proposals and SAM 3 box prompts:
   `python scripts/infer_retail_images.py --image-dir catalog\\evaluation\\images --limit 3 --config-file config\\proposer\\grounding_dino_sam3_experiment.json --output-dir outputs\\inference_sam3`
 - On RTX 50-series GPUs, use a CUDA-capable PyTorch env before running real proposer inference:

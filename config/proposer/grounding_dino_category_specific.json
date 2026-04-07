@@ -1,0 +1,21 @@
+{
+  "config": {
+    "proposer_type": "grounding_dino_sahi",
+    "device": "cuda",
+    "slice_size": 640,
+    "slice_overlap_ratio": 0.2,
+    "model_id": "IDEA-Research/grounding-dino-base",
+    "captions": [
+      "shampoo",
+      "soap",
+      "handwash"
+    ],
+    "box_threshold": 0.15,
+    "text_threshold": 0.1,
+    "nms_iou_threshold": 0.4,
+    "min_box_area_ratio": 5e-05,
+    "max_box_area_ratio": 0.08,
+    "containment_ratio_threshold": 0.85,
+    "containment_score_ratio_threshold": 0.75
+  }
+}
