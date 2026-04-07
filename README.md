@@ -38,6 +38,8 @@ The current goal is simple:
   `python scripts/evaluate_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --proposer-type grounding_dino_sahi --device cpu --model-id IDEA-Research/grounding-dino-tiny --box-threshold 0.2 --text-threshold 0.15 --nms-iou-threshold 0.4 --min-box-area-ratio 0.00005 --max-box-area-ratio 0.08`
 - Run a ranked sweep across several configs:
   `python scripts/sweep_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --device cpu --model-id IDEA-Research/grounding-dino-tiny --caption-set "product|products|bottle|package" --caption-set "product|products|bottle|container" --box-threshold 0.15 --box-threshold 0.2 --text-threshold 0.1 --text-threshold 0.15 --nms-iou-threshold 0.4 --min-box-area-ratio 0.00005 --max-box-area-ratio 0.08`
+- Save the winning sweep config as a reusable baseline:
+  `python scripts/sweep_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --device cuda --model-id IDEA-Research/grounding-dino-tiny --caption-set "product|products|bottle|container" --box-threshold 0.15 --text-threshold 0.1 --nms-iou-threshold 0.4 --min-box-area-ratio 0.00005 --max-box-area-ratio 0.08 --best-config-file config\\proposer\\grounding_dino_sahi_baseline.json`
 - On RTX 50-series GPUs, use a CUDA-capable PyTorch env before running real proposer inference:
   `pip install --upgrade --index-url https://download.pytorch.org/whl/cu130 torch torchvision torchaudio`
 

@@ -6,13 +6,14 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.retail_evaluator import load_benchmark_cases, validate_benchmark_cases
-from utils.retail_proposer_sweep import evaluate_proposer_sweep
+from utils.retail_proposer_sweep import evaluate_proposer_sweep, save_best_run_config
 
 
 def main():
     parser = argparse.ArgumentParser(description="Run a small config sweep for the shelf product proposer")
     parser.add_argument("--benchmark-file", required=True)
     parser.add_argument("--output-file", default="catalog/evaluation/proposer_sweep_report.json")
+    parser.add_argument("--best-config-file", default="")
     parser.add_argument("--proposer-type", default="grounding_dino_sahi")
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     parser.add_argument("--slice-size", type=int, default=640)
@@ -68,6 +69,9 @@ def main():
 
     with open(args.output_file, "w", encoding="utf-8") as handle:
         json.dump(report, handle, indent=2)
+
+    if args.best_config_file:
+        save_best_run_config(report, args.best_config_file)
 
     print(json.dumps({
         "run_count": report["run_count"],

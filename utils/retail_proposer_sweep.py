@@ -3,7 +3,9 @@ Sweep helpers for shelf product proposer experiments.
 """
 
 import itertools
-from typing import Dict, Iterable, List
+import json
+from pathlib import Path
+from typing import Dict, List
 
 from utils.retail_proposer_benchmark import evaluate_proposer_on_cases
 
@@ -54,6 +56,20 @@ def evaluate_proposer_sweep(cases: List[Dict], base_config: Dict, sweep_options:
         "top_runs": [_strip_report(run) for run in ranked_runs[:top_k]],
         "all_runs": [_strip_report(run) for run in ranked_runs],
     }
+
+
+def save_best_run_config(sweep_report: Dict, output_path: str) -> None:
+    best_run = sweep_report.get("best_run")
+    if not best_run:
+        raise ValueError("Sweep report does not contain a best_run")
+
+    payload = {
+        "config": best_run["config"],
+        "summary": best_run["summary"],
+    }
+    output_file = Path(output_path)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    output_file.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
 def _strip_report(run: Dict) -> Dict:

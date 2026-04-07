@@ -1,0 +1,27 @@
+{
+  "config": {
+    "proposer_type": "grounding_dino_sahi",
+    "device": "cuda",
+    "slice_size": 640,
+    "slice_overlap_ratio": 0.2,
+    "model_id": "IDEA-Research/grounding-dino-base",
+    "captions": [
+      "product",
+      "products",
+      "bottle",
+      "package"
+    ],
+    "box_threshold": 0.15,
+    "text_threshold": 0.1,
+    "nms_iou_threshold": 0.4,
+    "min_box_area_ratio": 5e-05,
+    "max_box_area_ratio": 0.08
+  },
+  "summary": {
+    "total_cases": 2,
+    "evaluated_cases": 2,
+    "proposal_precision": 0.0505,
+    "proposal_recall": 0.1596,
+    "proposal_mean_iou": 0.8413
+  }
+}
