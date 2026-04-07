@@ -1,5 +1,6 @@
 import os
 import sys
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -39,6 +40,39 @@ def test_run_product_proposer_returns_stub_for_grounding_dino_sahi():
     assert result["runtime"]["captions"] == ["product."]
     assert result["runtime"]["requested_device"] == "cpu"
     assert result["runtime"]["reason"]
+
+
+def test_run_product_proposer_returns_stub_for_grounding_dino_sam3():
+    result = run_product_proposer(
+        image_path="demo.jpg",
+        proposer_config={
+            "proposer_type": "grounding_dino_sam3",
+            "device": "cpu",
+            "sam3_model_id": "facebook/sam3",
+        },
+    )
+
+    assert result["runtime"]["mode"] == "missing_dependencies"
+    assert result["runtime"]["sam3_model_id"] == "facebook/sam3"
+    assert result["runtime"]["backend"] == "grounding dino + sam3 refinement"
+
+
+def test_run_product_proposer_falls_back_when_sam3_refinement_fails():
+    coarse_result = {
+        "detections": [{"bbox_xyxy": [0, 0, 10, 10], "confidence": 0.8}],
+        "runtime": {"available": True},
+    }
+    with patch("utils.retail_proposer._sam3_dependency_status", return_value={"available": True}), \
+         patch("utils.retail_proposer._run_grounding_dino_sahi", return_value=coarse_result), \
+         patch("utils.retail_proposer._refine_with_sam3", side_effect=RuntimeError("gated repo")):
+        result = run_product_proposer(
+            image_path="demo.jpg",
+            proposer_config={"proposer_type": "grounding_dino_sam3"},
+        )
+
+    assert result["runtime"]["mode"] == "sam3_unavailable_fallback"
+    assert result["runtime"]["sam3_fallback_to_coarse"] is True
+    assert result["detections"] == coarse_result["detections"]
 
 
 def test_resolve_captions_normalizes_and_deduplicates():

@@ -42,6 +42,8 @@ The current goal is simple:
   `python scripts/sweep_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --device cuda --model-id IDEA-Research/grounding-dino-tiny --caption-set "product|products|bottle|container" --box-threshold 0.15 --text-threshold 0.1 --nms-iou-threshold 0.4 --min-box-area-ratio 0.00005 --max-box-area-ratio 0.08 --best-config-file config\\proposer\\grounding_dino_sahi_baseline.json`
 - Run inference on a few shelf images and save preview overlays:
   `python scripts/infer_retail_images.py --image-dir catalog\\evaluation\\images --limit 3 --config-file config\\proposer\\grounding_dino_sahi_baseline.json --output-dir outputs\\inference`
+- Start a refinement experiment with Grounding DINO proposals and SAM 3 box prompts:
+  `python scripts/infer_retail_images.py --image-dir catalog\\evaluation\\images --limit 3 --config-file config\\proposer\\grounding_dino_sam3_experiment.json --output-dir outputs\\inference_sam3`
 - On RTX 50-series GPUs, use a CUDA-capable PyTorch env before running real proposer inference:
   `pip install --upgrade --index-url https://download.pytorch.org/whl/cu130 torch torchvision torchaudio`
 
@@ -58,3 +60,4 @@ The current goal is simple:
 - sliced inference is built in so the benchmark path can use SAHI-style windowing even before adding the external SAHI package
 - to activate real Grounding DINO inference, install the optional proposer dependencies first
 - the current working GPU path in local testing uses `torch 2.11.0+cu130`, which works with the RTX 5060 Laptop GPU
+- a `grounding_dino_sam3` proposer path now exists to refine coarse Grounding DINO boxes with SAM 3, but it may require Hugging Face access to `facebook/sam3`

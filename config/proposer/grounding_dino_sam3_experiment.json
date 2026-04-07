@@ -1,0 +1,25 @@
+{
+  "config": {
+    "proposer_type": "grounding_dino_sam3",
+    "device": "cuda",
+    "slice_size": 640,
+    "slice_overlap_ratio": 0.2,
+    "model_id": "IDEA-Research/grounding-dino-base",
+    "captions": [
+      "product",
+      "products",
+      "bottle",
+      "package"
+    ],
+    "box_threshold": 0.15,
+    "text_threshold": 0.1,
+    "nms_iou_threshold": 0.4,
+    "min_box_area_ratio": 5e-05,
+    "max_box_area_ratio": 0.08,
+    "sam3_model_id": "facebook/sam3",
+    "sam3_mask_threshold": 0.5,
+    "sam3_score_threshold": 0.5,
+    "sam3_max_refine_boxes": 48,
+    "sam3_box_iou_threshold": 0.1
+  }
+}

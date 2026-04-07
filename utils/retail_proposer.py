@@ -9,6 +9,7 @@ from typing import Dict, List
 from PIL import Image
 
 _GROUNDING_DINO_BACKEND = None
+_SAM3_BACKEND = None
 
 
 def run_product_proposer(image_path: str, proposer_config: Dict) -> Dict:
@@ -27,6 +28,9 @@ def run_product_proposer(image_path: str, proposer_config: Dict) -> Dict:
 
     if proposer_type == "grounding_dino_sahi":
         return _run_grounding_dino_sahi(image_path, proposer_config)
+
+    if proposer_type == "grounding_dino_sam3":
+        return _run_grounding_dino_sam3(image_path, proposer_config)
 
     raise ValueError(f"Unknown proposer_type: {proposer_type}")
 
@@ -83,6 +87,87 @@ def _grounding_dino_dependency_status() -> Dict:
             "reason": "Missing optional dependency: transformers",
         }
     return {"available": True}
+
+
+def _sam3_dependency_status() -> Dict:
+    dependency_status = _grounding_dino_dependency_status()
+    if not dependency_status["available"]:
+        return dependency_status
+
+    try:
+        import transformers
+    except Exception as exc:
+        return {
+            "available": False,
+            "reason": f"transformers import failed: {exc}",
+        }
+
+    if not hasattr(transformers, "Sam3Model") or not hasattr(transformers, "Sam3Processor"):
+        return {
+            "available": False,
+            "reason": "Installed transformers build does not expose Sam3Model/Sam3Processor",
+        }
+    return {"available": True}
+
+
+def _run_grounding_dino_sam3(image_path: str, proposer_config: Dict) -> Dict:
+    runtime = {
+        "available": False,
+        "mode": "missing_dependencies",
+        "reason": "",
+        "image_path": str(Path(image_path)),
+        "backend": "grounding dino + sam3 refinement",
+    }
+
+    sam_status = _sam3_dependency_status()
+    runtime["available"] = sam_status["available"]
+    runtime["reason"] = sam_status.get("reason", "")
+    runtime["sam3_model_id"] = proposer_config.get("sam3_model_id", "facebook/sam3")
+    runtime["sam3_mask_threshold"] = float(proposer_config.get("sam3_mask_threshold", 0.5))
+    runtime["sam3_score_threshold"] = float(proposer_config.get("sam3_score_threshold", 0.5))
+    runtime["sam3_max_refine_boxes"] = int(proposer_config.get("sam3_max_refine_boxes", 48))
+    runtime["sam3_box_iou_threshold"] = float(proposer_config.get("sam3_box_iou_threshold", 0.1))
+
+    if not sam_status["available"]:
+        return {
+            "proposer_type": "grounding_dino_sam3",
+            "detections": [],
+            "runtime": runtime,
+        }
+
+    coarse_config = dict(proposer_config)
+    coarse_config["proposer_type"] = "grounding_dino_sahi"
+    coarse_result = _run_grounding_dino_sahi(image_path, coarse_config)
+    coarse_detections = coarse_result.get("detections", [])
+    runtime["coarse_runtime"] = coarse_result.get("runtime", {})
+    runtime["coarse_detection_count"] = len(coarse_detections)
+
+    if not coarse_result.get("runtime", {}).get("available"):
+        runtime["available"] = False
+        runtime["mode"] = "missing_dependencies"
+        runtime["reason"] = coarse_result.get("runtime", {}).get("reason", runtime["reason"])
+        return {
+            "proposer_type": "grounding_dino_sam3",
+            "detections": [],
+            "runtime": runtime,
+        }
+
+    try:
+        refined_detections, sam_runtime = _refine_with_sam3(image_path, coarse_detections, proposer_config)
+        runtime.update(sam_runtime)
+        runtime["mode"] = "real"
+    except Exception as exc:
+        runtime["mode"] = "sam3_unavailable_fallback"
+        runtime["sam3_load_error"] = str(exc)
+        runtime["sam3_fallback_to_coarse"] = True
+        runtime["sam3_refine_input_count"] = 0
+        runtime["sam3_refined_detection_count"] = len(coarse_detections)
+        refined_detections = coarse_detections
+    return {
+        "proposer_type": "grounding_dino_sam3",
+        "detections": refined_detections,
+        "runtime": runtime,
+    }
 
 
 def _infer_grounding_dino_slices(image_path: str, proposer_config: Dict):
@@ -169,6 +254,100 @@ def _infer_grounding_dino_slices(image_path: str, proposer_config: Dict):
     return merged, runtime
 
 
+def _refine_with_sam3(image_path: str, coarse_detections: List[Dict], proposer_config: Dict):
+    torch = _import_torch()
+    processor, model, device = _get_sam3_backend(
+        proposer_config.get("sam3_model_id", "facebook/sam3"),
+        proposer_config.get("device", "auto"),
+    )
+    max_refine_boxes = int(proposer_config.get("sam3_max_refine_boxes", 48))
+    mask_threshold = float(proposer_config.get("sam3_mask_threshold", 0.5))
+    score_threshold = float(proposer_config.get("sam3_score_threshold", 0.5))
+    box_iou_threshold = float(proposer_config.get("sam3_box_iou_threshold", 0.1))
+    multimask_output = bool(proposer_config.get("sam3_multimask_output", False))
+
+    selected = sorted(
+        [item for item in coarse_detections if len(item.get("bbox_xyxy", [])) == 4],
+        key=lambda item: item.get("confidence", 0.0),
+        reverse=True,
+    )[:max_refine_boxes]
+    if not selected:
+        return [], {
+            "sam3_device": device,
+            "sam3_refine_input_count": 0,
+            "sam3_refined_detection_count": 0,
+            "sam3_filtered_low_score_count": 0,
+            "sam3_filtered_low_iou_count": 0,
+        }
+
+    with Image.open(image_path).convert("RGB") as image:
+        input_boxes = [[detection["bbox_xyxy"] for detection in selected]]
+        input_labels = [[1 for _ in selected]]
+        inputs = processor(
+            images=image,
+            input_boxes=input_boxes,
+            input_boxes_labels=input_labels,
+            return_tensors="pt",
+        )
+        inputs = {key: value.to(device) if hasattr(value, "to") else value for key, value in inputs.items()}
+
+        with torch.no_grad():
+            outputs = model(**inputs, multimask_output=multimask_output)
+
+        results = processor.post_process_instance_segmentation(
+            outputs,
+            threshold=score_threshold,
+            mask_threshold=mask_threshold,
+            target_sizes=inputs.get("original_sizes").tolist(),
+        )[0]
+
+    result_masks = results.get("masks", [])
+    result_boxes = results.get("boxes", [])
+    result_scores = results.get("scores", [])
+    refined_detections = []
+    filtered_low_score = 0
+    filtered_low_iou = 0
+
+    for coarse_detection, refined_box, refined_score, refined_mask in zip(selected, result_boxes, result_scores, result_masks):
+        score = float(refined_score)
+        if score < score_threshold:
+            filtered_low_score += 1
+            continue
+
+        if hasattr(refined_box, "tolist"):
+            refined_box = refined_box.tolist()
+        bbox_xyxy = [int(round(value)) for value in refined_box]
+        if _calculate_iou(coarse_detection["bbox_xyxy"], bbox_xyxy) < box_iou_threshold:
+            filtered_low_iou += 1
+            continue
+
+        mask_area = _mask_area(refined_mask)
+        refined_detections.append({
+            "bbox_xyxy": bbox_xyxy,
+            "confidence": round(score, 4),
+            "label": coarse_detection.get("label", "product"),
+            "caption": coarse_detection.get("caption", ""),
+            "source": "grounding_dino_sam3",
+            "coarse_bbox_xyxy": list(coarse_detection["bbox_xyxy"]),
+            "coarse_confidence": coarse_detection.get("confidence"),
+            "mask_area": mask_area,
+        })
+
+    merged = non_max_suppression(
+        refined_detections,
+        iou_threshold=float(proposer_config.get("nms_iou_threshold", 0.5)),
+    )
+    runtime = {
+        "sam3_device": device,
+        "sam3_refine_input_count": len(selected),
+        "sam3_refined_detection_count": len(merged),
+        "sam3_raw_refined_count": len(refined_detections),
+        "sam3_filtered_low_score_count": filtered_low_score,
+        "sam3_filtered_low_iou_count": filtered_low_iou,
+    }
+    return merged, runtime
+
+
 def generate_image_slices(image_size, slice_size: int, overlap_ratio: float) -> List[Dict]:
     width, height = image_size
     if slice_size <= 0:
@@ -245,6 +424,15 @@ def _box_area_ratio(bbox_xyxy: List[float], image_area: float) -> float:
     return (width * height) / image_area
 
 
+def _mask_area(mask) -> int:
+    if hasattr(mask, "sum"):
+        value = mask.sum()
+        if hasattr(value, "item"):
+            return int(value.item())
+        return int(value)
+    return 0
+
+
 def _resolve_captions(proposer_config: Dict) -> List[str]:
     captions = proposer_config.get("captions")
     if captions is None:
@@ -299,6 +487,44 @@ def _get_grounding_dino_backend(model_id: str, requested_device: str = "auto"):
     model.eval()
 
     _GROUNDING_DINO_BACKEND = {
+        "model_id": model_id,
+        "requested_device": requested_device,
+        "processor": processor,
+        "model": model,
+        "device": device,
+    }
+    return processor, model, device
+
+
+def _get_sam3_backend(model_id: str, requested_device: str = "auto"):
+    global _SAM3_BACKEND
+    if (
+        _SAM3_BACKEND
+        and _SAM3_BACKEND["model_id"] == model_id
+        and _SAM3_BACKEND["requested_device"] == requested_device
+    ):
+        return (
+            _SAM3_BACKEND["processor"],
+            _SAM3_BACKEND["model"],
+            _SAM3_BACKEND["device"],
+        )
+
+    from transformers import Sam3Model, Sam3Processor
+    torch = _import_torch()
+
+    if requested_device == "cpu":
+        device = "cpu"
+    elif requested_device == "cuda":
+        device = "cuda"
+    else:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    processor = Sam3Processor.from_pretrained(model_id)
+    model = Sam3Model.from_pretrained(model_id)
+    model.to(device)
+    model.eval()
+
+    _SAM3_BACKEND = {
         "model_id": model_id,
         "requested_device": requested_device,
         "processor": processor,
