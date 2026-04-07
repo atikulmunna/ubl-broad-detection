@@ -36,6 +36,10 @@ The current goal is simple:
   `python scripts/evaluate_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --proposer-type grounding_dino_sahi --device cpu --caption-candidate "product" --caption-candidate "products" --caption-candidate "bottle" --caption-candidate "package"`
 - Tune thresholds, model choice, and simple area filters from the CLI:
   `python scripts/evaluate_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --proposer-type grounding_dino_sahi --device cpu --model-id IDEA-Research/grounding-dino-tiny --box-threshold 0.2 --text-threshold 0.15 --nms-iou-threshold 0.4 --min-box-area-ratio 0.00005 --max-box-area-ratio 0.08`
+- Run a ranked sweep across several configs:
+  `python scripts/sweep_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --device cpu --model-id IDEA-Research/grounding-dino-tiny --caption-set "product|products|bottle|package" --caption-set "product|products|bottle|container" --box-threshold 0.15 --box-threshold 0.2 --text-threshold 0.1 --text-threshold 0.15 --nms-iou-threshold 0.4 --min-box-area-ratio 0.00005 --max-box-area-ratio 0.08`
+- On RTX 50-series GPUs, use a CUDA-capable PyTorch env before running real proposer inference:
+  `pip install --upgrade --index-url https://download.pytorch.org/whl/cu130 torch torchvision torchaudio`
 
 ## Notes
 
@@ -46,5 +50,7 @@ The current goal is simple:
 - `grounding_dino_sahi` now has an optional real inference path through Hugging Face `transformers`
 - repeated `--caption-candidate` values are normalized and merged with NMS, which makes prompt tuning easier on dense shelves
 - the proposer CLI now exposes model, threshold, NMS, and box-area knobs so dense-shelf tuning does not require code changes
+- the sweep CLI ranks configs by recall first, then precision, then mean IoU so we can keep a current benchmark baseline
 - sliced inference is built in so the benchmark path can use SAHI-style windowing even before adding the external SAHI package
 - to activate real Grounding DINO inference, install the optional proposer dependencies first
+- the current working GPU path in local testing uses `torch 2.11.0+cu130`, which works with the RTX 5060 Laptop GPU
