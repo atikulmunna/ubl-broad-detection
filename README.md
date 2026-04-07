@@ -61,3 +61,5 @@ The current goal is simple:
 - to activate real Grounding DINO inference, install the optional proposer dependencies first
 - the current working GPU path in local testing uses `torch 2.11.0+cu130`, which works with the RTX 5060 Laptop GPU
 - a `grounding_dino_sam3` proposer path now exists to refine coarse Grounding DINO boxes with SAM 3, but it may require Hugging Face access to `facebook/sam3`
+- the tuned default prompt set is now intentionally narrow (`product`, `products`) to reduce duplicate whole-object vs label/sticker detections
+- containment suppression is applied after NMS so low-confidence inner boxes inside larger product boxes are filtered more aggressively

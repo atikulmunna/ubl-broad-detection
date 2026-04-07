@@ -39,6 +39,8 @@ def _run_grounding_dino_sahi(image_path: str, proposer_config: Dict) -> Dict:
     captions = _resolve_captions(proposer_config)
     min_box_area_ratio = float(proposer_config.get("min_box_area_ratio", 0.0))
     max_box_area_ratio = float(proposer_config.get("max_box_area_ratio", 1.0))
+    containment_ratio_threshold = float(proposer_config.get("containment_ratio_threshold", 0.85))
+    containment_score_ratio_threshold = float(proposer_config.get("containment_score_ratio_threshold", 0.75))
     dependency_status = _grounding_dino_dependency_status()
     runtime = {
         "available": dependency_status["available"],
@@ -53,6 +55,8 @@ def _run_grounding_dino_sahi(image_path: str, proposer_config: Dict) -> Dict:
         "requested_device": proposer_config.get("device", "auto"),
         "min_box_area_ratio": min_box_area_ratio,
         "max_box_area_ratio": max_box_area_ratio,
+        "containment_ratio_threshold": containment_ratio_threshold,
+        "containment_score_ratio_threshold": containment_score_ratio_threshold,
         "backend": "transformers + sliced inference",
     }
 
@@ -184,6 +188,8 @@ def _infer_grounding_dino_slices(image_path: str, proposer_config: Dict):
     nms_iou_threshold = float(proposer_config.get("nms_iou_threshold", 0.5))
     min_box_area_ratio = float(proposer_config.get("min_box_area_ratio", 0.0))
     max_box_area_ratio = float(proposer_config.get("max_box_area_ratio", 1.0))
+    containment_ratio_threshold = float(proposer_config.get("containment_ratio_threshold", 0.85))
+    containment_score_ratio_threshold = float(proposer_config.get("containment_score_ratio_threshold", 0.75))
 
     with Image.open(image_path).convert("RGB") as image:
         image_area = float(image.width * image.height)
@@ -237,14 +243,21 @@ def _infer_grounding_dino_slices(image_path: str, proposer_config: Dict):
                     caption_count += 1
             per_caption_counts[caption] = caption_count
 
-    merged = non_max_suppression(detections, iou_threshold=nms_iou_threshold)
+    nms_merged = non_max_suppression(detections, iou_threshold=nms_iou_threshold)
+    merged, containment_filtered = suppress_contained_boxes(
+        nms_merged,
+        containment_ratio_threshold=containment_ratio_threshold,
+        score_ratio_threshold=containment_score_ratio_threshold,
+    )
     runtime = {
         "device": device,
         "caption_count": len(captions),
         "per_caption_detection_count": per_caption_counts,
         "slice_count": len(slices),
         "raw_detection_count": len(detections),
+        "nms_detection_count": len(nms_merged),
         "merged_detection_count": len(merged),
+        "containment_filtered_count": containment_filtered,
         "filtered_small_count": filtered_small,
         "filtered_large_count": filtered_large,
         "box_threshold": box_threshold,
@@ -382,6 +395,38 @@ def non_max_suppression(detections: List[Dict], iou_threshold: float = 0.5) -> L
     return kept
 
 
+def suppress_contained_boxes(detections: List[Dict], containment_ratio_threshold: float = 0.85,
+                             score_ratio_threshold: float = 0.75):
+    kept = []
+    filtered_count = 0
+
+    for detection in sorted(detections, key=lambda item: item.get("confidence", 0.0), reverse=True):
+        bbox = detection.get("bbox_xyxy", [])
+        if len(bbox) != 4:
+            continue
+
+        should_filter = False
+        for existing in kept:
+            existing_bbox = existing.get("bbox_xyxy", [])
+            if len(existing_bbox) != 4:
+                continue
+
+            containment = _containment_ratio(bbox, existing_bbox)
+            score = float(detection.get("confidence", 0.0))
+            existing_score = float(existing.get("confidence", 0.0))
+            score_ratio = score / existing_score if existing_score > 0 else 0.0
+
+            if containment >= containment_ratio_threshold and score_ratio <= score_ratio_threshold:
+                should_filter = True
+                filtered_count += 1
+                break
+
+        if not should_filter:
+            kept.append(detection)
+
+    return kept, filtered_count
+
+
 def _sliding_positions(length: int, window: int, step: int) -> List[int]:
     if length <= window:
         return [0]
@@ -412,6 +457,25 @@ def _calculate_iou(box_a: List[float], box_b: List[float]) -> float:
     if union <= 0:
         return 0.0
     return inter_area / union
+
+
+def _containment_ratio(inner_box: List[float], outer_box: List[float]) -> float:
+    ix1, iy1, ix2, iy2 = inner_box
+    ox1, oy1, ox2, oy2 = outer_box
+
+    inter_x1 = max(ix1, ox1)
+    inter_y1 = max(iy1, oy1)
+    inter_x2 = min(ix2, ox2)
+    inter_y2 = min(iy2, oy2)
+
+    inter_w = max(0.0, inter_x2 - inter_x1)
+    inter_h = max(0.0, inter_y2 - inter_y1)
+    inter_area = inter_w * inter_h
+
+    inner_area = max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1)
+    if inner_area <= 0:
+        return 0.0
+    return inter_area / inner_area
 
 
 def _box_area_ratio(bbox_xyxy: List[float], image_area: float) -> float:

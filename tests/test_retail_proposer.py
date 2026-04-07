@@ -5,7 +5,13 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.retail_proposer import run_product_proposer
-from utils.retail_proposer import _box_area_ratio, _resolve_captions, generate_image_slices, non_max_suppression
+from utils.retail_proposer import (
+    _box_area_ratio,
+    _resolve_captions,
+    generate_image_slices,
+    non_max_suppression,
+    suppress_contained_boxes,
+)
 from utils.retail_proposer_benchmark import evaluate_proposer_on_cases
 
 
@@ -113,6 +119,25 @@ def test_non_max_suppression_keeps_best_box():
     assert kept[1]["confidence"] == 0.7
 
 
+def test_suppress_contained_boxes_removes_low_score_inner_box():
+    detections = [
+        {"bbox_xyxy": [0, 0, 100, 200], "confidence": 0.9},
+        {"bbox_xyxy": [20, 40, 80, 160], "confidence": 0.5},
+        {"bbox_xyxy": [130, 20, 180, 100], "confidence": 0.6},
+    ]
+
+    kept, filtered_count = suppress_contained_boxes(
+        detections,
+        containment_ratio_threshold=0.85,
+        score_ratio_threshold=0.75,
+    )
+
+    assert filtered_count == 1
+    assert len(kept) == 2
+    assert kept[0]["bbox_xyxy"] == [0, 0, 100, 200]
+    assert kept[1]["bbox_xyxy"] == [130, 20, 180, 100]
+
+
 def test_run_product_proposer_reports_area_filters_in_stub_runtime():
     result = run_product_proposer(
         image_path="demo.jpg",
@@ -126,6 +151,7 @@ def test_run_product_proposer_reports_area_filters_in_stub_runtime():
 
     assert result["runtime"]["min_box_area_ratio"] == 0.001
     assert result["runtime"]["max_box_area_ratio"] == 0.2
+    assert result["runtime"]["containment_ratio_threshold"] == 0.85
 
 
 def test_evaluate_proposer_on_cases_scores_mock_predictions():
