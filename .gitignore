@@ -41,6 +41,7 @@ logs/
 # Results
 results/
 outputs/
+runs/
 temp/
 tmp/
 

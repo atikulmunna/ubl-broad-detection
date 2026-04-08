@@ -50,6 +50,12 @@ The current goal is simple:
   `python scripts/tune_retail_sam3.py --image-dir catalog\\evaluation\\images --limit 1 --config-file config\\proposer\\grounding_dino_sam3_experiment.json --output-dir outputs\\sam3_tuning`
 - Use the first tuned SAM3 config directly:
   `python scripts/infer_retail_images.py --image-dir catalog\\evaluation\\images --limit 1 --config-file config\\proposer\\grounding_dino_sam3_tuned.json --output-dir outputs\\inference_sam3_tuned`
+- Try a whole-product retail prompt set with tuned SAM3:
+  `python scripts/infer_retail_images.py --image-dir catalog\\evaluation\\images --limit 3 --config-file config\\proposer\\grounding_dino_sam3_whole_product.json --output-dir outputs\\inference_whole_product`
+- Prepare a Roboflow-style COCO shelf dataset for one-class YOLO training:
+  `python scripts/prepare_retail_yolo_dataset.py --dataset-root "dataset\\SOS Merged -OneClass-COCO Format"`
+- Train a one-class retail detector baseline from the same dataset:
+  `python scripts/train_retail_yolo.py --dataset-root "dataset\\SOS Merged -OneClass-COCO Format" --model yolo11n.pt --device cuda --epochs 50 --imgsz 1280 --batch 8 --summary-file outputs\\yolo_train\\summary.json`
 - On RTX 50-series GPUs, use a CUDA-capable PyTorch env before running real proposer inference:
   `pip install --upgrade --index-url https://download.pytorch.org/whl/cu130 torch torchvision torchaudio`
 
@@ -69,3 +75,5 @@ The current goal is simple:
 - a `grounding_dino_sam3` proposer path now exists to refine coarse Grounding DINO boxes with SAM 3, but it may require Hugging Face access to `facebook/sam3`
 - the tuned default prompt set is now intentionally narrow (`product`, `products`) to reduce duplicate whole-object vs label/sticker detections
 - containment suppression is applied after NMS so low-confidence inner boxes inside larger product boxes are filtered more aggressively
+- `prepare_retail_yolo_dataset.py` converts each split's COCO boxes into sidecar YOLO `.txt` labels and writes a dataset yaml without touching the source images
+- `train_retail_yolo.py` is the new baseline path for learning "one physical product = one box" directly from your shelf dataset
