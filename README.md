@@ -56,6 +56,8 @@ The current goal is simple:
   `python scripts/prepare_retail_yolo_dataset.py --dataset-root "dataset\\SOS Merged -OneClass-COCO Format"`
 - Train a one-class retail detector baseline from the same dataset:
   `python scripts/train_retail_yolo.py --dataset-root "dataset\\SOS Merged -OneClass-COCO Format" --model yolo11n.pt --device cuda --epochs 50 --imgsz 1280 --batch 8 --summary-file outputs\\yolo_train\\summary.json`
+- Run the full one-class setup and training flow on another PC:
+  `powershell -ExecutionPolicy Bypass -File scripts\\setup_and_train_retail_yolo.ps1`
 - On RTX 50-series GPUs, use a CUDA-capable PyTorch env before running real proposer inference:
   `pip install --upgrade --index-url https://download.pytorch.org/whl/cu130 torch torchvision torchaudio`
 
@@ -77,3 +79,4 @@ The current goal is simple:
 - containment suppression is applied after NMS so low-confidence inner boxes inside larger product boxes are filtered more aggressively
 - `prepare_retail_yolo_dataset.py` converts each split's COCO boxes into sidecar YOLO `.txt` labels and writes a dataset yaml without touching the source images
 - `train_retail_yolo.py` is the new baseline path for learning "one physical product = one box" directly from your shelf dataset
+- `setup_and_train_retail_yolo.ps1` bundles environment creation, dependency install, dataset prep, and training into one PowerShell command
