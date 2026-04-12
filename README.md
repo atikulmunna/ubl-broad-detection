@@ -58,6 +58,10 @@ The current goal is simple:
   `python scripts/train_retail_yolo.py --dataset-root "dataset\\SOS Merged -OneClass-COCO Format" --model yolo11n.pt --device cuda --epochs 50 --imgsz 960 --batch 4 --summary-file outputs\\yolo_train\\summary.json`
 - Run the full setup + training flow on another PC:
   `powershell -ExecutionPolicy Bypass -File scripts\\setup_and_train_retail_yolo.ps1`
+- Run inference with the trained YOLO proposer:
+  `python scripts/infer_retail_images.py --image-dir catalog\\evaluation\\images --limit 3 --config-file config\\proposer\\yolo_local_best.json --output-dir outputs\\inference_yolo`
+- Benchmark the trained YOLO proposer against imported shelf cases:
+  `python scripts/evaluate_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --proposer-type yolo_local --weights-path runs\\detect\\outputs\\yolo_train\\retail_one_class\\weights\\best.pt --device cuda --confidence-threshold 0.25 --iou-threshold 0.5`
 - On RTX 50-series GPUs, use a CUDA-capable PyTorch env before running real proposer inference:
   `pip install --upgrade --index-url https://download.pytorch.org/whl/cu130 torch torchvision torchaudio`
 
@@ -80,3 +84,4 @@ The current goal is simple:
 - `prepare_retail_yolo_dataset.py` converts each split's COCO boxes into sidecar YOLO `.txt` labels and writes a dataset yaml without touching the source images
 - `train_retail_yolo.py` is the new baseline path for learning "one physical product = one box" directly from your shelf dataset
 - `setup_and_train_retail_yolo.ps1` is the recommended fresh-machine path because it installs the tested CUDA PyTorch build, prepares labels, runs training, and prints the checkpoint paths at the end
+- `yolo_local` lets the benchmark and preview workflow consume a trained local `best.pt` checkpoint using the same report format as the foundation-model proposers

@@ -1,6 +1,7 @@
 import os
 import sys
 from unittest.mock import patch
+from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -61,6 +62,56 @@ def test_run_product_proposer_returns_stub_for_grounding_dino_sam3():
     assert result["runtime"]["mode"] == "missing_dependencies"
     assert result["runtime"]["sam3_model_id"] == "facebook/sam3"
     assert result["runtime"]["backend"] == "grounding dino + sam3 refinement"
+
+
+def test_run_product_proposer_returns_stub_for_yolo_without_weights():
+    with patch("utils.retail_proposer._torch_import_status", return_value=(True, "")):
+        result = run_product_proposer(
+            image_path="demo.jpg",
+            proposer_config={
+                "proposer_type": "yolo_local",
+                "device": "cpu",
+            },
+        )
+
+    assert result["runtime"]["mode"] == "missing_dependencies"
+    assert "weights_path" in result["runtime"]["reason"]
+
+
+def test_run_product_proposer_uses_yolo_backend_when_weights_exist(tmp_path: Path):
+    weights_path = tmp_path / "best.pt"
+    weights_path.write_text("fake", encoding="utf-8")
+
+    class _FakeBoxes:
+        def __init__(self):
+            self.xyxy = _FakeTensor([[1.2, 2.4, 30.1, 40.8]])
+            self.conf = _FakeTensor([0.8765])
+            self.cls = _FakeTensor([0])
+
+    class _FakeResult:
+        def __init__(self):
+            self.boxes = _FakeBoxes()
+
+    class _FakeModel:
+        def predict(self, **kwargs):
+            return [_FakeResult()]
+
+    with patch("utils.retail_proposer._yolo_dependency_status", return_value={"available": True}), \
+         patch("utils.retail_proposer._get_yolo_backend", return_value=(_FakeModel(), "cpu")):
+        result = run_product_proposer(
+            image_path="demo.jpg",
+            proposer_config={
+                "proposer_type": "yolo_local",
+                "weights_path": str(weights_path),
+                "device": "cpu",
+                "confidence_threshold": 0.3,
+            },
+        )
+
+    assert result["runtime"]["mode"] == "real"
+    assert result["runtime"]["device"] == "cpu"
+    assert result["detections"][0]["bbox_xyxy"] == [1, 2, 30, 41]
+    assert result["detections"][0]["confidence"] == 0.8765
 
 
 def test_run_product_proposer_falls_back_when_sam3_refinement_fails():
@@ -175,3 +226,11 @@ def test_evaluate_proposer_on_cases_scores_mock_predictions():
     assert report["summary"]["proposal_recall"] == 1.0
     assert report["summary"]["proposal_mean_iou"] == 1.0
     assert report["cases"][0]["proposal_metrics"]["true_positives"] == 1
+
+
+class _FakeTensor:
+    def __init__(self, value):
+        self._value = value
+
+    def tolist(self):
+        return self._value

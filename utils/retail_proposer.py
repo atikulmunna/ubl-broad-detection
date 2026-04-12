@@ -10,6 +10,7 @@ from PIL import Image
 
 _GROUNDING_DINO_BACKEND = None
 _SAM3_BACKEND = None
+_YOLO_BACKEND = None
 
 
 def run_product_proposer(image_path: str, proposer_config: Dict) -> Dict:
@@ -32,7 +33,48 @@ def run_product_proposer(image_path: str, proposer_config: Dict) -> Dict:
     if proposer_type == "grounding_dino_sam3":
         return _run_grounding_dino_sam3(image_path, proposer_config)
 
+    if proposer_type == "yolo_local":
+        return _run_yolo_local(image_path, proposer_config)
+
     raise ValueError(f"Unknown proposer_type: {proposer_type}")
+
+
+def _run_yolo_local(image_path: str, proposer_config: Dict) -> Dict:
+    weights_path = str(proposer_config.get("weights_path", "")).strip()
+    confidence_threshold = float(proposer_config.get("confidence_threshold", 0.25))
+    iou_threshold = float(proposer_config.get("iou_threshold", 0.45))
+    image_size = int(proposer_config.get("image_size", 960))
+    max_det = int(proposer_config.get("max_det", 300))
+
+    dependency_status = _yolo_dependency_status(weights_path)
+    runtime = {
+        "available": dependency_status["available"],
+        "mode": "real" if dependency_status["available"] else "missing_dependencies",
+        "reason": dependency_status.get("reason", ""),
+        "image_path": str(Path(image_path)),
+        "requested_device": proposer_config.get("device", "auto"),
+        "weights_path": weights_path,
+        "confidence_threshold": confidence_threshold,
+        "iou_threshold": iou_threshold,
+        "image_size": image_size,
+        "max_det": max_det,
+        "backend": "ultralytics yolo",
+    }
+
+    if not dependency_status["available"]:
+        return {
+            "proposer_type": "yolo_local",
+            "detections": [],
+            "runtime": runtime,
+        }
+
+    detections, extra_runtime = _infer_yolo_local(image_path, proposer_config)
+    runtime.update(extra_runtime)
+    return {
+        "proposer_type": "yolo_local",
+        "detections": detections,
+        "runtime": runtime,
+    }
 
 
 def _run_grounding_dino_sahi(image_path: str, proposer_config: Dict) -> Dict:
@@ -89,6 +131,34 @@ def _grounding_dino_dependency_status() -> Dict:
         return {
             "available": False,
             "reason": "Missing optional dependency: transformers",
+        }
+    return {"available": True}
+
+
+def _yolo_dependency_status(weights_path: str) -> Dict:
+    torch_available, torch_reason = _torch_import_status()
+    if not torch_available:
+        return {
+            "available": False,
+            "reason": torch_reason,
+        }
+
+    if not importlib.util.find_spec("ultralytics"):
+        return {
+            "available": False,
+            "reason": "Missing optional dependency: ultralytics",
+        }
+
+    if not weights_path:
+        return {
+            "available": False,
+            "reason": "Missing required config value: weights_path",
+        }
+
+    if not Path(weights_path).exists():
+        return {
+            "available": False,
+            "reason": f"YOLO weights not found: {weights_path}",
         }
     return {"available": True}
 
@@ -361,6 +431,48 @@ def _refine_with_sam3(image_path: str, coarse_detections: List[Dict], proposer_c
     return merged, runtime
 
 
+def _infer_yolo_local(image_path: str, proposer_config: Dict):
+    model, device = _get_yolo_backend(
+        proposer_config["weights_path"],
+        proposer_config.get("device", "auto"),
+    )
+    confidence_threshold = float(proposer_config.get("confidence_threshold", 0.25))
+    iou_threshold = float(proposer_config.get("iou_threshold", 0.45))
+    image_size = int(proposer_config.get("image_size", 960))
+    max_det = int(proposer_config.get("max_det", 300))
+
+    prediction = model.predict(
+        source=image_path,
+        conf=confidence_threshold,
+        iou=iou_threshold,
+        imgsz=image_size,
+        device=device,
+        max_det=max_det,
+        verbose=False,
+    )[0]
+
+    detections = []
+    boxes = getattr(prediction, "boxes", None)
+    if boxes is not None:
+        xyxy_values = boxes.xyxy.tolist() if hasattr(boxes.xyxy, "tolist") else []
+        conf_values = boxes.conf.tolist() if hasattr(boxes.conf, "tolist") else []
+        cls_values = boxes.cls.tolist() if hasattr(boxes.cls, "tolist") else []
+        for xyxy, confidence, class_id in zip(xyxy_values, conf_values, cls_values):
+            detections.append({
+                "bbox_xyxy": [int(round(value)) for value in xyxy],
+                "confidence": round(float(confidence), 4),
+                "label": str(int(class_id)),
+                "source": "yolo_local",
+            })
+
+    runtime = {
+        "device": device,
+        "raw_detection_count": len(detections),
+        "merged_detection_count": len(detections),
+    }
+    return detections, runtime
+
+
 def generate_image_slices(image_size, slice_size: int, overlap_ratio: float) -> List[Dict]:
     width, height = image_size
     if slice_size <= 0:
@@ -596,6 +708,35 @@ def _get_sam3_backend(model_id: str, requested_device: str = "auto"):
         "device": device,
     }
     return processor, model, device
+
+
+def _get_yolo_backend(weights_path: str, requested_device: str = "auto"):
+    global _YOLO_BACKEND
+    if (
+        _YOLO_BACKEND
+        and _YOLO_BACKEND["weights_path"] == weights_path
+        and _YOLO_BACKEND["requested_device"] == requested_device
+    ):
+        return _YOLO_BACKEND["model"], _YOLO_BACKEND["device"]
+
+    from ultralytics import YOLO
+    torch = _import_torch()
+
+    if requested_device == "cpu":
+        device = "cpu"
+    elif requested_device == "cuda":
+        device = "cuda"
+    else:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    model = YOLO(weights_path)
+    _YOLO_BACKEND = {
+        "weights_path": weights_path,
+        "requested_device": requested_device,
+        "model": model,
+        "device": device,
+    }
+    return model, device
 
 
 def _torch_import_status():

@@ -19,6 +19,8 @@ def main():
     parser.add_argument("--caption-candidate", action="append", default=[])
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     parser.add_argument("--model-id", default="IDEA-Research/grounding-dino-tiny")
+    parser.add_argument("--weights-path", default="")
+    parser.add_argument("--confidence-threshold", type=float, default=0.25)
     parser.add_argument("--slice-size", type=int, default=640)
     parser.add_argument("--slice-overlap-ratio", type=float, default=0.2)
     parser.add_argument("--box-threshold", type=float, default=0.25)
@@ -42,6 +44,8 @@ def main():
             "captions": args.caption_candidate or None,
             "device": args.device,
             "model_id": args.model_id,
+            "weights_path": args.weights_path,
+            "confidence_threshold": args.confidence_threshold,
             "slice_size": args.slice_size,
             "slice_overlap_ratio": args.slice_overlap_ratio,
             "box_threshold": args.box_threshold,
