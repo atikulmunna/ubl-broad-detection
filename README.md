@@ -64,6 +64,8 @@ The current goal is simple:
   `python scripts/evaluate_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --proposer-type yolo_local --weights-path runs\\detect\\outputs\\yolo_train\\retail_one_class\\weights\\best.pt --device cuda --confidence-threshold 0.25 --iou-threshold 0.5`
 - Sweep the trained YOLO checkpoints across confidence thresholds:
   `python scripts/sweep_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --proposer-type yolo_local --device cuda --weights-path runs\\detect\\outputs\\yolo_train\\retail_one_class\\weights\\best.pt --weights-path runs\\detect\\outputs\\yolo_train\\retail_one_class2\\weights\\best.pt --confidence-threshold 0.05 --confidence-threshold 0.1 --confidence-threshold 0.15 --confidence-threshold 0.25 --image-size 960 --top-k 5`
+- Compare two inference runs side by side:
+  `python scripts/compare_retail_proposer_runs.py --left-manifest outputs\\inference_yolo\\manifest.json --right-manifest outputs\\inference_sam3\\manifest.json --left-name yolo --right-name gdino_sam3 --output-report outputs\\inference_compare\\comparison.json --output-preview-dir outputs\\inference_compare\\previews`
 - On RTX 50-series GPUs, use a CUDA-capable PyTorch env before running real proposer inference:
   `pip install --upgrade --index-url https://download.pytorch.org/whl/cu130 torch torchvision torchaudio`
 
@@ -87,3 +89,4 @@ The current goal is simple:
 - `train_retail_yolo.py` is the new baseline path for learning "one physical product = one box" directly from your shelf dataset
 - `setup_and_train_retail_yolo.ps1` is the recommended fresh-machine path because it installs the tested CUDA PyTorch build, prepares labels, runs training, and prints the checkpoint paths at the end
 - `yolo_local` lets the benchmark and preview workflow consume a trained local `best.pt` checkpoint using the same report format as the foundation-model proposers
+- `compare_retail_proposer_runs.py` lines up two inference manifests and renders side-by-side preview sheets for faster visual comparison
