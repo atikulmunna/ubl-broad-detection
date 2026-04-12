@@ -2,8 +2,7 @@
 boto3==1.29.7
 
 # Core ML dependencies
-torch==2.5.1
-torchvision==0.20.1
+# PyTorch is installed separately by setup scripts so we can enforce a CUDA-enabled build.
 pillow>=9.0.0
 numpy<2.0.0
 # ultralytics>=8.3.0,<9.0.0
