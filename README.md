@@ -62,6 +62,8 @@ The current goal is simple:
   `python scripts/infer_retail_images.py --image-dir catalog\\evaluation\\images --limit 3 --config-file config\\proposer\\yolo_local_best.json --output-dir outputs\\inference_yolo`
 - Benchmark the trained YOLO proposer against imported shelf cases:
   `python scripts/evaluate_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --proposer-type yolo_local --weights-path runs\\detect\\outputs\\yolo_train\\retail_one_class\\weights\\best.pt --device cuda --confidence-threshold 0.25 --iou-threshold 0.5`
+- Sweep the trained YOLO checkpoints across confidence thresholds:
+  `python scripts/sweep_retail_proposer.py --benchmark-file catalog\\evaluation\\imported_dense_test.json --proposer-type yolo_local --device cuda --weights-path runs\\detect\\outputs\\yolo_train\\retail_one_class\\weights\\best.pt --weights-path runs\\detect\\outputs\\yolo_train\\retail_one_class2\\weights\\best.pt --confidence-threshold 0.05 --confidence-threshold 0.1 --confidence-threshold 0.15 --confidence-threshold 0.25 --image-size 960 --top-k 5`
 - On RTX 50-series GPUs, use a CUDA-capable PyTorch env before running real proposer inference:
   `pip install --upgrade --index-url https://download.pytorch.org/whl/cu130 torch torchvision torchaudio`
 

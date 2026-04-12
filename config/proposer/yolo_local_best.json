@@ -2,13 +2,17 @@
   "config": {
     "proposer_type": "yolo_local",
     "device": "cuda",
-    "weights_path": "runs/detect/outputs/yolo_train/retail_one_class/weights/best.pt",
-    "confidence_threshold": 0.25,
+    "weights_path": "runs\\detect\\outputs\\yolo_train\\retail_one_class\\weights\\best.pt",
+    "confidence_threshold": 0.05,
     "iou_threshold": 0.45,
     "image_size": 960,
     "max_det": 300
   },
   "summary": {
-    "notes": "Local trained YOLO one-class proposer baseline. Update weights_path if your best.pt lives under a different run directory."
+    "total_cases": 2,
+    "evaluated_cases": 2,
+    "proposal_precision": 0.5139,
+    "proposal_recall": 0.3691,
+    "proposal_mean_iou": 0.8179
   }
 }
